@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Moneyball.Domain\Moneyball.Domain.csproj" />
+    <ProjectReference Include="..\Moneyball.ML\Moneyball.ML.csproj" />
+    <ProjectReference Include="..\Moneyball.Shared\Moneyball.Shared.csproj" />
+  </ItemGroup>
+
+</Project>
