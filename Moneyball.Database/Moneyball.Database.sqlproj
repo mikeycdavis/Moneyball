@@ -56,12 +56,34 @@
   <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
   <ItemGroup>
     <Folder Include="Properties" />
+    <Folder Include="ml" />
+    <Folder Include="dbo" />
+    <Folder Include="data" />
+    <Folder Include="Security" />
+    <Folder Include="DML" />
+    <Folder Include="DML\Catalog" />
+    <Folder Include="DML\PreDeployment" />
+    <Folder Include="DML\PostDeployment" />
   </ItemGroup>
   <ItemGroup>
-    <Build Include="NbaTeam.sql" />
-    <Build Include="NbaGame.sql" />
-    <Build Include="NbaFeatureSet.sql" />
-    <Build Include="NbaPrediction.sql" />
-    <Build Include="NbaOdds.sql" />
+    <Build Include="ml\Models.sql" />
+    <Build Include="ml\ModelPerformance.sql" />
+    <Build Include="dbo\BettingRecommendations.sql" />
+    <Build Include="Security\ml.sql" />
+    <Build Include="data\Predictions.sql" />
+    <Build Include="data\GameOdds.sql" />
+    <Build Include="data\Games.sql" />
+    <Build Include="data\Sports.sql" />
+    <Build Include="data\Teams.sql" />
+    <Build Include="Security\data.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <PreDeploy Include="DML\PreDeployment\Script.PreDeployment.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <PostDeploy Include="DML\PostDeployment\Script.PostDeployment.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DML\DatabaseSetup.sql" />
   </ItemGroup>
 </Project>

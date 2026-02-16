@@ -7,9 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Moneyball.Domain\Moneyball.Domain.csproj" />
-    <ProjectReference Include="..\Moneyball.ML\Moneyball.ML.csproj" />
-    <ProjectReference Include="..\Moneyball.Shared\Moneyball.Shared.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Moneyball.Data\Moneyball.Data.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,0 @@
-﻿CREATE TABLE NbaTeam (
-    Id INT IDENTITY PRIMARY KEY,
-    Name NVARCHAR(100) NOT NULL,
-    Abbreviation NVARCHAR(10) NOT NULL
-);
