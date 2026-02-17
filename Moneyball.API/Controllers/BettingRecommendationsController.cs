@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Moneyball.Service;
-using Moneyball.Service.DTO;
+using Moneyball.Core.DTOs;
+using Moneyball.Infrastructure.Services;
 
 namespace Moneyball.API.Controllers
 {
@@ -14,18 +14,18 @@ namespace Moneyball.API.Controllers
     //   "sportId": 1,
     //   "modelIds": [3, 5, 7]  // Use ensemble of models 3, 5, 7
     // }
-    [ApiController]
-    [Route("api/[controller]")]
-    public class BettingRecommendationsController(BettingRecommendationService service) : ControllerBase
-    {
-        [HttpPost]
-        public async Task<ActionResult<BettingRecommendationResponse>> GetRecommendations([FromBody] BettingRecommendationRequest request)
-        {
-            if (request.Bankroll <= 0)
-                return BadRequest("Bankroll must be positive");
+    //[ApiController]
+    //[Route("api/[controller]")]
+    //public class BettingRecommendationsController(BettingRecommendationService service) : ControllerBase
+    //{
+    //    [HttpPost]
+    //    public async Task<ActionResult<BettingRecommendationResponse>> GetRecommendations([FromBody] BettingRecommendationRequest request)
+    //    {
+    //        if (request.Bankroll <= 0)
+    //            return BadRequest("Bankroll must be positive");
 
-            var response = await service.GetRecommendationsAsync(request);
-            return Ok(response);
-        }
-    }
+    //        var response = await service.GetRecommendationsAsync(request);
+    //        return Ok(response);
+    //    }
+    //}
 }

@@ -1,10 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Moneyball.Data;
 using Moneyball.Data.Repository;
-using Moneyball.Service.ExternalAPIs;
-using Moneyball.Worker;
 using Polly;
 using Polly.Extensions.Http;
+using DataIngestionBackgroundService = Moneyball.API.Background_Services.DataIngestionBackgroundService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,17 +30,17 @@ var retryPolicy = HttpPolicyExtensions
     .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
     .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
 
-builder.Services.AddHttpClient<ISportsDataService, SportsDataService>()
-    .AddPolicyHandler(retryPolicy)
-    .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+//builder.Services.AddHttpClient<ISportsDataService, SportsDataService>()
+//    .AddPolicyHandler(retryPolicy)
+//    .SetHandlerLifetime(TimeSpan.FromMinutes(5));
 
-builder.Services.AddHttpClient<IOddsDataService, OddsDataService>()
-    .AddPolicyHandler(retryPolicy)
-    .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+//builder.Services.AddHttpClient<IOddsDataService, OddsDataService>()
+//    .AddPolicyHandler(retryPolicy)
+//    .SetHandlerLifetime(TimeSpan.FromMinutes(5));
 
-// Register Data Services
-builder.Services.AddScoped<IDataIngestionService, DataIngestionService>();
-builder.Services.AddScoped<IDataIngestionOrchestrator, DataIngestionOrchestrator>();
+//// Register Data Services
+//builder.Services.AddScoped<IDataIngestionService, DataIngestionService>();
+//builder.Services.AddScoped<IDataIngestionOrchestrator, DataIngestionOrchestrator>();
 
 // Background Services
 if (builder.Configuration.GetValue<bool>("DataIngestion:EnableBackgroundService"))

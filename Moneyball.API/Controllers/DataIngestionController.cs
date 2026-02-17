@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Moneyball.Service.ExternalAPIs;
+using Moneyball.Core.Interfaces.ExternalAPIs;
 
 namespace Moneyball.API.Controllers;
 

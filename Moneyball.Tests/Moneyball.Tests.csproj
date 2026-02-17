@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Moneyball.Service\Moneyball.Service.csproj" />
+    <ProjectReference Include="..\Moneyball.Infrastructure\Moneyball.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

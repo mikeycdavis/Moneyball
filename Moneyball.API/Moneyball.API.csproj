@@ -20,6 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Moneyball.Core\Moneyball.Core.csproj" />
+    <ProjectReference Include="..\Moneyball.Infrastructure\Moneyball.Infrastructure.csproj" />
     <ProjectReference Include="..\Moneyball.Service\Moneyball.Service.csproj" />
     <ProjectReference Include="..\Moneyball.Worker\Moneyball.Worker.csproj" />
   </ItemGroup>
