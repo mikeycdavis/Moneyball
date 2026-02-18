@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Moneyball.Core.Entities;
 using Moneyball.Core.Interfaces;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Moneyball.API.Controllers;
 
@@ -13,6 +15,7 @@ public class GamesController(IMoneyballRepository moneyballRepository, ILogger<G
     /// <param name="sportId">Sport ID (1=NBA, 2=NFL, etc.)</param>
     /// <param name="daysAhead">Number of days ahead to fetch</param>
     [HttpGet("upcoming")]
+    [SwaggerResponse(StatusCodes.Status200OK, "List of upcoming games", typeof(IEnumerable<Game>))]
     public async Task<IActionResult> GetUpcomingGames(
         [FromQuery] int? sportId = null,
         [FromQuery] int daysAhead = 7)
@@ -48,6 +51,7 @@ public class GamesController(IMoneyballRepository moneyballRepository, ILogger<G
     /// </summary>
     /// <param name="gameId">Game ID</param>
     [HttpGet("{gameId}")]
+    [SwaggerResponse(StatusCodes.Status200OK, "Specific game with all details")]
     public async Task<IActionResult> GetGame(int gameId)
     {
         try
@@ -141,6 +145,7 @@ public class GamesController(IMoneyballRepository moneyballRepository, ILogger<G
     /// Get games by date range
     /// </summary>
     [HttpGet("range")]
+    [SwaggerResponse(StatusCodes.Status200OK, "List of games by date range")]
     public async Task<IActionResult> GetGamesByDateRange(
         [FromQuery] DateTime startDate,
         [FromQuery] DateTime endDate,
@@ -174,6 +179,7 @@ public class GamesController(IMoneyballRepository moneyballRepository, ILogger<G
     /// Get latest odds for upcoming games
     /// </summary>
     [HttpGet("odds/latest")]
+    [SwaggerResponse(StatusCodes.Status200OK, "List of latest odds for upcoming games")]
     public async Task<IActionResult> GetLatestOdds([FromQuery] int? sportId = null)
     {
         try
