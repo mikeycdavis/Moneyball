@@ -40,11 +40,13 @@ public class MoneyballDbContext(DbContextOptions<MoneyballDbContext> options) : 
             entity.HasIndex(e => e.ExternalGameId);
             entity.HasIndex(e => new { e.Status, e.GameDate });
 
+            // Preserve Team records when a Game is deleted
             entity.HasOne(e => e.HomeTeam)
                 .WithMany(t => t.HomeGames)
                 .HasForeignKey(e => e.HomeTeamId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Preserve Team records when a Game is deleted
             entity.HasOne(e => e.AwayTeam)
                 .WithMany(t => t.AwayGames)
                 .HasForeignKey(e => e.AwayTeamId)
@@ -62,6 +64,12 @@ public class MoneyballDbContext(DbContextOptions<MoneyballDbContext> options) : 
         modelBuilder.Entity<TeamStatistic>(entity =>
         {
             entity.HasIndex(e => new { e.GameId, e.TeamId });
+
+            // Preserve Team records when a TeamStatistic is deleted
+            entity.HasOne(p => p.Team)
+                .WithMany()
+                .HasForeignKey(p => p.TeamId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Model configuration
@@ -77,12 +85,36 @@ public class MoneyballDbContext(DbContextOptions<MoneyballDbContext> options) : 
             entity.HasIndex(e => new { e.GameId, e.ModelId });
             entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => new { e.ModelId, e.CreatedAt });
+
+            // Preserve Model records when a Prediction is deleted
+            entity.HasOne(p => p.Model)
+                .WithMany(p => p.Predictions)
+                .HasForeignKey(p => p.ModelId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Preserve Game records when a Prediction is deleted
+            entity.HasOne(p => p.Game)
+                .WithMany(p => p.Predictions)
+                .HasForeignKey(p => p.GameId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
         // BettingRecommendation configuration
         modelBuilder.Entity<BettingRecommendation>(entity =>
         {
             entity.HasIndex(e => new { e.Edge, e.CreatedAt });
+
+            // Preserve Team records when a BettingRecommendation is deleted
+            entity.HasOne(p => p.RecommendedTeam)
+                .WithMany()
+                .HasForeignKey(p => p.RecommendedTeamId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Cascade delete BettingRecommendations when a Prediction is deleted
+            entity.HasOne(br => br.Prediction)
+                .WithMany(p => p.Recommendations)
+                .HasForeignKey(br => br.PredictionId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Seed initial sports
