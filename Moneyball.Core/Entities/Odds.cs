@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Moneyball.Core.Entities;
 
 [Table("GameOdds", Schema = "dbo")]
-public class GameOdds
+public class Odds
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

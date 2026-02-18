@@ -8,7 +8,7 @@ public class MoneyballDbContext(DbContextOptions<MoneyballDbContext> options) : 
     public DbSet<Sport> Sports { get; set; }
     public DbSet<Team> Teams { get; set; }
     public DbSet<Game> Games { get; set; }
-    public DbSet<GameOdds> GameOdds { get; set; }
+    public DbSet<Odds> Odds { get; set; }
     public DbSet<TeamStatistic> TeamStatistics { get; set; }
     public DbSet<Model> Models { get; set; }
     public DbSet<ModelPerformance> ModelPerformances { get; set; }
@@ -52,7 +52,7 @@ public class MoneyballDbContext(DbContextOptions<MoneyballDbContext> options) : 
         });
 
         // GameOdds configuration
-        modelBuilder.Entity<GameOdds>(entity =>
+        modelBuilder.Entity<Odds>(entity =>
         {
             entity.HasIndex(e => new { e.GameId, e.RecordedAt });
             entity.HasIndex(e => e.BookmakerName);

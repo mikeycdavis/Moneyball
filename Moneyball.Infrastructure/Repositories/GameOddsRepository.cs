@@ -4,9 +4,9 @@ using Moneyball.Core.Interfaces;
 
 namespace Moneyball.Infrastructure.Repositories;
 
-public class GameOddsRepository(MoneyballDbContext context) : Repository<GameOdds>(context), IGameOddsRepository
+public class GameOddsRepository(MoneyballDbContext context) : Repository<Odds>(context), IGameOddsRepository
 {
-    public async Task<GameOdds?> GetLatestOddsAsync(int gameId, string? bookmaker = null)
+    public async Task<Odds?> GetLatestOddsAsync(int gameId, string? bookmaker = null)
     {
         var query = _dbSet.Where(o => o.GameId == gameId);
 
@@ -18,7 +18,7 @@ public class GameOddsRepository(MoneyballDbContext context) : Repository<GameOdd
         return await query.OrderByDescending(o => o.RecordedAt).FirstOrDefaultAsync();
     }
 
-    public async Task<IEnumerable<GameOdds>> GetOddsHistoryAsync(int gameId)
+    public async Task<IEnumerable<Odds>> GetOddsHistoryAsync(int gameId)
     {
         return await _dbSet
             .Where(o => o.GameId == gameId)
@@ -26,7 +26,7 @@ public class GameOddsRepository(MoneyballDbContext context) : Repository<GameOdd
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<GameOdds>> GetLatestOddsForGamesAsync(IEnumerable<int> gameIds)
+    public async Task<IEnumerable<Odds>> GetLatestOddsForGamesAsync(IEnumerable<int> gameIds)
     {
         var gameIdList = gameIds.ToList();
 

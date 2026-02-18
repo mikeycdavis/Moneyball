@@ -50,7 +50,7 @@ namespace Moneyball.Core.Entities
         [ForeignKey(nameof(AwayTeamId))]
         public virtual Team AwayTeam { get; set; } = null!;
 
-        public virtual ICollection<GameOdds> Odds { get; set; } = new List<GameOdds>();
+        public virtual ICollection<Odds> Odds { get; set; } = new List<Odds>();
         public virtual ICollection<Prediction> Predictions { get; set; } = new List<Prediction>();
         public virtual ICollection<TeamStatistic> TeamStatistics { get; set; } = new List<TeamStatistic>();
     }

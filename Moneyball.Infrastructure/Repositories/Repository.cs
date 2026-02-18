@@ -4,7 +4,7 @@ using Moneyball.Core.Interfaces;
 
 namespace Moneyball.Infrastructure.Repositories;
 
-public class Repository<T>(MoneyballDbContext context) : IRepository<T> where T : class
+public class Repository<T>(DbContext context) : IRepository<T> where T : class
 {
     protected readonly DbSet<T> _dbSet = context.Set<T>();
 
