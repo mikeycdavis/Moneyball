@@ -1,10 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Moneyball.API.Background_Services;
-using Moneyball.Core.Entities;
-using Moneyball.Core.Interfaces.ExternalAPIs;
-using Moneyball.Data;
-using Moneyball.Data.Repository;
-using Moneyball.Infrastructure.ExternalAPIs;
+using Moneyball.Core.Interfaces;
+using Moneyball.Infrastructure.Repositories;
 using Polly;
 using Polly.Extensions.Http;
 
@@ -16,22 +12,22 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Database Context
-//builder.Services.AddDbContext<MoneyballDbContext>(options =>
-//    options.UseSqlServer(
-//        builder.Configuration.GetConnectionString("DefaultConnection"),
-//        sqlOptions => sqlOptions.EnableRetryOnFailure(
-//            maxRetryCount: 5,
-//            maxRetryDelay: TimeSpan.FromSeconds(30),
-//            errorNumbersToAdd: null)));
+builder.Services.AddDbContext<MoneyballDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorNumbersToAdd: null)));
 
 // Register Repositories
-builder.Services.AddScoped<IGameOddsRepository, GameOddsRepository>();
-builder.Services.AddScoped<IRepository<GameOdds>>();
-builder.Services.AddScoped<IGameRepository, GameRepository>();
-builder.Services.AddScoped<IModelRepository, ModelRepository>();
+//builder.Services.AddScoped<IGameOddsRepository, GameOddsRepository>();
+//builder.Services.AddScoped<IRepository<GameOdds>, Repository<GameOdds>>();
+//builder.Services.AddScoped<IGameRepository, GameRepository>();
+//builder.Services.AddScoped<IModelRepository, ModelRepository>();
 builder.Services.AddScoped<IMoneyballRepository, MoneyballRepository>();
-builder.Services.AddScoped<IPredictionRepository, PredictionRepository>();
-builder.Services.AddScoped<ITeamRepository, TeamRepository>();
+//builder.Services.AddScoped<IPredictionRepository, PredictionRepository>();
+//builder.Services.AddScoped<ITeamRepository, TeamRepository>();
 
 // HTTP Clients with Polly retry policies
 var retryPolicy = HttpPolicyExtensions
@@ -39,22 +35,22 @@ var retryPolicy = HttpPolicyExtensions
     .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
     .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
 
-builder.Services.AddHttpClient<ISportsDataService, SportsDataService>()
-    .AddPolicyHandler(retryPolicy)
-    .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+//builder.Services.AddHttpClient<ISportsDataService, SportsDataService>()
+//    .AddPolicyHandler(retryPolicy)
+//    .SetHandlerLifetime(TimeSpan.FromMinutes(5));
 
-builder.Services.AddHttpClient<IOddsDataService, OddsDataService>()
-    .AddPolicyHandler(retryPolicy)
-    .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+//builder.Services.AddHttpClient<IOddsDataService, OddsDataService>()
+//    .AddPolicyHandler(retryPolicy)
+//    .SetHandlerLifetime(TimeSpan.FromMinutes(5));
 
-// Register Data Services
-builder.Services.AddScoped<IDataIngestionService, DataIngestionService>();
-builder.Services.AddScoped<IDataIngestionOrchestrator, DataIngestionOrchestrator>();
+//// Register Data Services
+//builder.Services.AddScoped<IDataIngestionService, DataIngestionService>();
+//builder.Services.AddScoped<IDataIngestionOrchestrator, DataIngestionOrchestrator>();
 
 // Background Services
 if (builder.Configuration.GetValue<bool>("DataIngestion:EnableBackgroundService"))
 {
-    builder.Services.AddHostedService<DataIngestionBackgroundService>();
+    //builder.Services.AddHostedService<DataIngestionBackgroundService>();
 }
 
 // CORS (if needed for frontend)

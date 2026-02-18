@@ -7,6 +7,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Background Services\**" />
+    <Content Remove="Background Services\**" />
+    <EmbeddedResource Remove="Background Services\**" />
+    <None Remove="Background Services\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Controllers\BettingRecommendationsController.cs" />
+    <Compile Remove="Controllers\DataIngestionController.cs" />
+    <Compile Remove="Controllers\GamesController.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.3" />
@@ -22,8 +35,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Moneyball.Core\Moneyball.Core.csproj" />
     <ProjectReference Include="..\Moneyball.Infrastructure\Moneyball.Infrastructure.csproj" />
-    <ProjectReference Include="..\Moneyball.Service\Moneyball.Service.csproj" />
-    <ProjectReference Include="..\Moneyball.Worker\Moneyball.Worker.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>

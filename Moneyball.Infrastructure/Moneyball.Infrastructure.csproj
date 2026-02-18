@@ -7,6 +7,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="ExternalAPIs\**" />
+    <Compile Remove="ML\**" />
+    <Compile Remove="Services\**" />
+    <EmbeddedResource Remove="ExternalAPIs\**" />
+    <EmbeddedResource Remove="ML\**" />
+    <EmbeddedResource Remove="Services\**" />
+    <None Remove="ExternalAPIs\**" />
+    <None Remove="ML\**" />
+    <None Remove="Services\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.3" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.3" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />

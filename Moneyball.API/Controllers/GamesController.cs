@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Moneyball.Data.Repository;
+using Moneyball.Infrastructure.Repositories;
 
 namespace Moneyball.API.Controllers;
 

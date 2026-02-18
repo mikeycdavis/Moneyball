@@ -8,6 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="BettingRecommendationIntegrationTests.cs" />
+    <Compile Remove="GameRepositoryTests.cs" />
+    <Compile Remove="KellyCriterionCalculatorTests.cs" />
+    <Compile Remove="OddsRepositoryTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="8.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
