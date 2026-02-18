@@ -9,9 +9,7 @@
 
   <ItemGroup>
     <Compile Remove="BettingRecommendationIntegrationTests.cs" />
-    <Compile Remove="GameRepositoryTests.cs" />
     <Compile Remove="KellyCriterionCalculatorTests.cs" />
-    <Compile Remove="OddsRepositoryTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

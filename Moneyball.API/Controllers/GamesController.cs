@@ -1,21 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Moneyball.Infrastructure.Repositories;
+using Moneyball.Core.Interfaces;
 
 namespace Moneyball.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class GamesController : ControllerBase
+public class GamesController(IMoneyballRepository moneyballRepository, ILogger<GamesController> logger) : ControllerBase
 {
-    private readonly IMoneyballRepository _moneyballRepository;
-    private readonly ILogger<GamesController> _logger;
-
-    public GamesController(IMoneyballRepository moneyballRepository, ILogger<GamesController> logger)
-    {
-        _moneyballRepository = moneyballRepository;
-        _logger = logger;
-    }
-
     /// <summary>
     /// Get upcoming games for a sport
     /// </summary>
@@ -28,7 +19,7 @@ public class GamesController : ControllerBase
     {
         try
         {
-            var games = await _moneyballRepository.Games.GetUpcomingGamesAsync(sportId, daysAhead);
+            var games = await moneyballRepository.Games.GetUpcomingGamesAsync(sportId, daysAhead);
 
             var result = games.Select(g => new
             {
@@ -47,7 +38,7 @@ public class GamesController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching upcoming games");
+            logger.LogError(ex, "Error fetching upcoming games");
             return StatusCode(500, new { error = ex.Message });
         }
     }
@@ -61,7 +52,7 @@ public class GamesController : ControllerBase
     {
         try
         {
-            var game = await _moneyballRepository.Games.GetGameWithDetailsAsync(gameId);
+            var game = await moneyballRepository.Games.GetGameWithDetailsAsync(gameId);
 
             if (game == null)
             {
@@ -108,8 +99,8 @@ public class GamesController : ControllerBase
                     Total = new
                     {
                         Line = o.OverUnder,
-                        OverOdds = o.OverOdds,
-                        UnderOdds = o.UnderOdds
+                        o.OverOdds,
+                        o.UnderOdds
                     },
                     o.RecordedAt
                 }),
@@ -128,7 +119,7 @@ public class GamesController : ControllerBase
                 Predictions = game.Predictions.Select(p => new
                 {
                     Model = p.Model.Name,
-                    Version = p.Model.Version,
+                    p.Model.Version,
                     p.PredictedHomeWinProbability,
                     p.PredictedAwayWinProbability,
                     p.Edge,
@@ -141,7 +132,7 @@ public class GamesController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching game {GameId}", gameId);
+            logger.LogError(ex, "Error fetching game {GameId}", gameId);
             return StatusCode(500, new { error = ex.Message });
         }
     }
@@ -157,7 +148,7 @@ public class GamesController : ControllerBase
     {
         try
         {
-            var games = await _moneyballRepository.Games.GetGamesByDateRangeAsync(startDate, endDate, sportId);
+            var games = await moneyballRepository.Games.GetGamesByDateRangeAsync(startDate, endDate, sportId);
 
             var result = games.Select(g => new
             {
@@ -174,7 +165,7 @@ public class GamesController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching games by date range");
+            logger.LogError(ex, "Error fetching games by date range");
             return StatusCode(500, new { error = ex.Message });
         }
     }
@@ -187,14 +178,14 @@ public class GamesController : ControllerBase
     {
         try
         {
-            var upcomingGames = await _moneyballRepository.Games.GetUpcomingGamesAsync(sportId, 3);
+            var upcomingGames = await moneyballRepository.Games.GetUpcomingGamesAsync(sportId, 3);
             var gameIds = upcomingGames.Select(g => g.GameId).ToList();
 
-            var odds = await _moneyballRepository.GameOdds.GetLatestOddsForGamesAsync(gameIds);
+            var odds = await moneyballRepository.GameOdds.GetLatestOddsForGamesAsync(gameIds);
 
             var result = odds.Select(o => new
             {
-                GameId = o.GameId,
+                o.GameId,
                 Game = $"{o.Game.AwayTeam.Name} @ {o.Game.HomeTeam.Name}",
                 o.Game.GameDate,
                 o.BookmakerName,
@@ -209,8 +200,8 @@ public class GamesController : ControllerBase
                 Total = new
                 {
                     Line = o.OverUnder,
-                    OverOdds = o.OverOdds,
-                    UnderOdds = o.UnderOdds
+                    o.OverOdds,
+                    o.UnderOdds
                 },
                 o.RecordedAt
             });
@@ -219,7 +210,7 @@ public class GamesController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching latest odds");
+            logger.LogError(ex, "Error fetching latest odds");
             return StatusCode(500, new { error = ex.Message });
         }
     }

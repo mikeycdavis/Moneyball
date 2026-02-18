@@ -16,7 +16,6 @@
   <ItemGroup>
     <Compile Remove="Controllers\BettingRecommendationsController.cs" />
     <Compile Remove="Controllers\DataIngestionController.cs" />
-    <Compile Remove="Controllers\GamesController.cs" />
   </ItemGroup>
 
   <ItemGroup>
