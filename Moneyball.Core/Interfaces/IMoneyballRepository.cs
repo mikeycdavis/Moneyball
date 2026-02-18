@@ -6,7 +6,7 @@ namespace Moneyball.Core.Interfaces
     {
         IGameRepository Games { get; }
         ITeamRepository Teams { get; }
-        IGameOddsRepository GameOdds { get; }
+        IGameOddsRepository Odds { get; }
         IPredictionRepository Predictions { get; }
         IModelRepository Models { get; }
         IRepository<Sport> Sports { get; }
