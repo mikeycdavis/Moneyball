@@ -5,13 +5,13 @@ USE master;
 GO
 
 -- Create database if it doesn't exist
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'SportsBetting')
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'Moneyball')
 BEGIN
-    CREATE DATABASE SportsBetting;
+    CREATE DATABASE Moneyball;
 END
 GO
 
-USE SportsBetting;
+USE Moneyball;
 GO
 
 -- Sports table

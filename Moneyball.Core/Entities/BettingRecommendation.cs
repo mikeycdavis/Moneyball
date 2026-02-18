@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Moneyball.Core.Entities;
 
+[Table("BettingRecommendations", Schema = "dbo")]
 public class BettingRecommendation
 {
     [Key]

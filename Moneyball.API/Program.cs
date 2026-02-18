@@ -85,8 +85,13 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<MoneyballDbContext>();
     try
     {
-        db.Database.Migrate();
-        Console.WriteLine("Database migration completed successfully");
+        var pendingMigrations = db.Database.GetPendingMigrations();
+
+        if (pendingMigrations.Any())
+        {
+            db.Database.Migrate();
+            Console.WriteLine("Database migration completed successfully");
+        }
     }
     catch (Exception ex)
     {

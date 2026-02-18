@@ -1,4 +1,6 @@
-﻿namespace Moneyball.Core.Interfaces
+﻿using Moneyball.Core.Entities;
+
+namespace Moneyball.Core.Interfaces
 {
     public interface IMoneyballRepository : IDisposable
     {
@@ -7,10 +9,10 @@
         //IGameOddsRepository GameOdds { get; }
         //IPredictionRepository Predictions { get; }
         //IModelRepository Models { get; }
-        //IRepository<Sport> Sports { get; }
-        //IRepository<TeamStatistic> TeamStatistics { get; }
-        //IRepository<ModelPerformance> ModelPerformances { get; }
-        //IRepository<BettingRecommendation> BettingRecommendations { get; }
+        IRepository<Sport> Sports { get; }
+        IRepository<TeamStatistic> TeamStatistics { get; }
+        IRepository<ModelPerformance> ModelPerformances { get; }
+        IRepository<BettingRecommendation> BettingRecommendations { get; }
 
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();

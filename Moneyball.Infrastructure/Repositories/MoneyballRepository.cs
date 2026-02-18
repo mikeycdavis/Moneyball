@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Storage;
+using Moneyball.Core.Entities;
 using Moneyball.Core.Interfaces;
 
 namespace Moneyball.Infrastructure.Repositories;
@@ -17,10 +18,10 @@ public class MoneyballRepository : IMoneyballRepository
         //GameOdds = new GameOddsRepository(_context);
         //Predictions = new PredictionRepository(_context);
         //Models = new ModelRepository(_context);
-        //Sports = new Repository<Sport>(_context);
-        //TeamStatistics = new Repository<TeamStatistic>(_context);
-        //ModelPerformances = new Repository<ModelPerformance>(_context);
-        //BettingRecommendations = new Repository<BettingRecommendation>(_context);
+        Sports = new Repository<Sport>(_context);
+        TeamStatistics = new Repository<TeamStatistic>(_context);
+        ModelPerformances = new Repository<ModelPerformance>(_context);
+        BettingRecommendations = new Repository<BettingRecommendation>(_context);
     }
 
     //public IGameRepository Games { get; }
@@ -28,10 +29,10 @@ public class MoneyballRepository : IMoneyballRepository
     //public IGameOddsRepository GameOdds { get; }
     //public IPredictionRepository Predictions { get; }
     //public IModelRepository Models { get; }
-    //public IRepository<Sport> Sports { get; }
-    //public IRepository<TeamStatistic> TeamStatistics { get; }
-    //public IRepository<ModelPerformance> ModelPerformances { get; }
-    //public IRepository<BettingRecommendation> BettingRecommendations { get; }
+    public IRepository<Sport> Sports { get; }
+    public IRepository<TeamStatistic> TeamStatistics { get; }
+    public IRepository<ModelPerformance> ModelPerformances { get; }
+    public IRepository<BettingRecommendation> BettingRecommendations { get; }
 
     public async Task<int> SaveChangesAsync()
     {

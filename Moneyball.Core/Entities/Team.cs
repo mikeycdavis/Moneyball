@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Moneyball.Core.Entities
 {
+    [Table("Teams", Schema = "dbo")]
     public class Team
     {
         [Key]

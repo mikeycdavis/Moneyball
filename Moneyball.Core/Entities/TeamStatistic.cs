@@ -6,6 +6,7 @@ namespace Moneyball.Core.Entities;
 /// <summary>
 /// Stores team-level statistics for a specific game
 /// </summary>
+[Table("TeamStatistics", Schema = "dbo")]
 public class TeamStatistic
 {
     [Key]

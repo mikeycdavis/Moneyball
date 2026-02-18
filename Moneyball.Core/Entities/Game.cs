@@ -4,6 +4,7 @@ using Moneyball.Core.Enums;
 
 namespace Moneyball.Core.Entities
 {
+    [Table("Games", Schema = "dbo")]
     public class Game
     {
         [Key]
