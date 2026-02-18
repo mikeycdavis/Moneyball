@@ -181,7 +181,7 @@ public class GamesController(IMoneyballRepository moneyballRepository, ILogger<G
             var upcomingGames = await moneyballRepository.Games.GetUpcomingGamesAsync(sportId, 3);
             var gameIds = upcomingGames.Select(g => g.GameId).ToList();
 
-            var odds = await moneyballRepository.GameOdds.GetLatestOddsForGamesAsync(gameIds);
+            var odds = await moneyballRepository.Odds.GetLatestOddsForGamesAsync(gameIds);
 
             var result = odds.Select(o => new
             {
