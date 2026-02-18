@@ -14,10 +14,10 @@ public class MoneyballRepository : IMoneyballRepository
         _context = context;
 
         Games = new GameRepository(_context);
-        //Teams = new TeamRepository(_context);
-        //Odds = new GameOddsRepository(_context);
-        //Predictions = new PredictionRepository(_context);
-        //Models = new ModelRepository(_context);
+        Teams = new TeamRepository(_context);
+        Odds = new OddsRepository(_context);
+        Predictions = new PredictionRepository(_context);
+        Models = new ModelRepository(_context);
         Sports = new Repository<Sport>(_context);
         TeamStatistics = new Repository<TeamStatistic>(_context);
         ModelPerformances = new Repository<ModelPerformance>(_context);
@@ -25,10 +25,10 @@ public class MoneyballRepository : IMoneyballRepository
     }
 
     public IGameRepository Games { get; }
-    //public ITeamRepository Teams { get; }
-    //public IGameOddsRepository Odds { get; }
-    //public IPredictionRepository Predictions { get; }
-    //public IModelRepository Models { get; }
+    public ITeamRepository Teams { get; }
+    public IGameOddsRepository Odds { get; }
+    public IPredictionRepository Predictions { get; }
+    public IModelRepository Models { get; }
     public IRepository<Sport> Sports { get; }
     public IRepository<TeamStatistic> TeamStatistics { get; }
     public IRepository<ModelPerformance> ModelPerformances { get; }

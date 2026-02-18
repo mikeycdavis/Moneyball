@@ -4,7 +4,7 @@ using Moneyball.Core.Interfaces;
 
 namespace Moneyball.Infrastructure.Repositories;
 
-public class GameOddsRepository(MoneyballDbContext context) : Repository<Odds>(context), IGameOddsRepository
+public class OddsRepository(MoneyballDbContext context) : Repository<Odds>(context), IGameOddsRepository
 {
     public async Task<Odds?> GetLatestOddsAsync(int gameId, string? bookmaker = null)
     {
