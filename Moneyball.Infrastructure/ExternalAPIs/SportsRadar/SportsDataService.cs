@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Moneyball.Core.Entities;
 using Moneyball.Core.Interfaces.ExternalAPIs;
 using Moneyball.Service.ExternalAPIs.DTO;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace Moneyball.Infrastructure.ExternalAPIs.SportsRadar;
 
@@ -45,10 +47,20 @@ public class SportsDataService : ISportsDataService
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var scheduleResponse = await response.Content.ReadFromJsonAsync<NBAScheduleResponse>();
-                    if (scheduleResponse?.Games != null)
+                    var jsonResponse = await response.Content.ReadAsStringAsync();
+
+                    if (string.IsNullOrWhiteSpace(jsonResponse))
                     {
-                        games.AddRange(scheduleResponse.Games);
+                        _logger.LogWarning("Failed to fetch schedule for {Date}. API returned empty content.",date);
+                    }
+                    else
+                    {
+                        var scheduleResponse = JsonSerializer.Deserialize<NBAScheduleResponse>(jsonResponse);
+
+                        if (scheduleResponse?.Games != null)
+                        {
+                            games.AddRange(scheduleResponse.Games);
+                        }
                     }
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)

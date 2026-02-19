@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moneyball.Core.Interfaces.ExternalAPIs;
 using Moneyball.Service.ExternalAPIs.DTO;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace Moneyball.Infrastructure.ExternalAPIs.Odds;
 
@@ -57,7 +58,15 @@ public class OddsDataService : IOddsDataService
                 _logger.LogInformation("Odds API requests remaining: {Remaining}", remaining);
             }
 
-            var oddsData = await response.Content.ReadFromJsonAsync<List<OddsGame>>();
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+
+            if (string.IsNullOrWhiteSpace(jsonResponse))
+            {
+                _logger.LogWarning("Odds API returned empty content for {Sport}", sport);
+                return new OddsResponse();
+            }
+
+            var oddsData = JsonSerializer.Deserialize<List<OddsGame>>(jsonResponse);
 
             return new OddsResponse
             {
