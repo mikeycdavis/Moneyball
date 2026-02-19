@@ -322,38 +322,78 @@ public class DataIngestionService(
         }
     }
 
+    /// <summary>
+    /// Ingests detailed box-score statistics for a specific NBA game.
+    /// Maps all NBAStatistics fields to TeamStatistic columns and upserts for both home and away teams.
+    /// </summary>
+    /// <param name="externalGameId">SportRadar game ID</param>
     public async Task IngestNBAGameStatisticsAsync(string externalGameId)
     {
-        logger.LogInformation("Ingesting statistics for game {GameId}", externalGameId);
+        logger.LogInformation("Starting NBA game statistics ingestion for game {GameId}", externalGameId);
 
         try
         {
-            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
-            if (nbaSport == null) return;
+            // Step 1: Validate input
+            if (string.IsNullOrWhiteSpace(externalGameId))
+            {
+                logger.LogWarning("ExternalGameId is null or empty. Cannot fetch statistics.");
+                throw new ArgumentException("ExternalGameId cannot be null or empty", nameof(externalGameId));
+            }
 
+            // Step 2: Get NBA sport entity
+            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
+
+            if (nbaSport == null)
+            {
+                logger.LogError("NBA sport not found in database. Ensure Sports seed data exists.");
+                throw new InvalidOperationException("NBA sport not found in database. Run database migrations or execute DatabaseSetup.sql to seed Sports table.");
+            }
+
+            // Step 3: Get the game from database
             var game = await moneyballRepository.Games.GetGameByExternalIdAsync(externalGameId, nbaSport.SportId);
+
             if (game == null)
             {
-                logger.LogWarning("Game {GameId} not found in database", externalGameId);
+                logger.LogWarning("Game {GameId} not found in database. Run schedule ingestion first.", externalGameId);
+                throw new InvalidOperationException($"Game {externalGameId} not found in database. Run IngestNBAScheduleAsync first to create the game.");
+            }
+
+            // Step 4: Fetch statistics from SportRadar API
+            logger.LogInformation("Fetching statistics for game {GameId} from SportRadar API", externalGameId);
+            var statistics = await sportsDataService.GetNBAGameStatisticsAsync(externalGameId);
+
+            if (statistics == null)
+            {
+                logger.LogWarning("No statistics returned from SportRadar API for game {GameId}. Game may not have started yet.", externalGameId);
                 return;
             }
 
-            var statistics = await sportsDataService.GetNBAGameStatisticsAsync(externalGameId);
-            if (statistics == null) return;
+            // Step 5: Upsert home team statistics
+            await UpsertTeamStatisticsAsync(
+                game.GameId,
+                game.HomeTeamId,
+                true, // isHomeTeam
+                statistics.Home.Statistics,
+                "Home");
 
-            // Process home team statistics
-            await UpsertTeamStatistics(game.GameId, game.HomeTeamId, true, statistics.Home.Statistics);
+            // Step 6: Upsert away team statistics
+            await UpsertTeamStatisticsAsync(
+                game.GameId,
+                game.AwayTeamId,
+                false, // isHomeTeam
+                statistics.Away.Statistics,
+                "Away");
 
-            // Process away team statistics
-            await UpsertTeamStatistics(game.GameId, game.AwayTeamId, false, statistics.Away.Statistics);
+            // Step 7: Save all changes in a single transaction
+            var changeCount = await moneyballRepository.SaveChangesAsync();
 
-            await moneyballRepository.SaveChangesAsync();
-
-            logger.LogInformation("Statistics ingested for game {GameId}", externalGameId);
+            logger.LogInformation(
+                "NBA game statistics ingestion complete for game {GameId}. Changes saved: {ChangeCount}",
+                externalGameId, changeCount);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error ingesting statistics for game {GameId}", externalGameId);
+            logger.LogError(ex, "Error during NBA game statistics ingestion for game {GameId}", externalGameId);
             throw;
         }
     }
@@ -497,57 +537,97 @@ public class DataIngestionService(
         }
     }
 
-    private async Task UpsertTeamStatistics(int gameId, int teamId, bool isHomeTeam,
-        NBAStatistics stats)
+    /// <summary>
+    /// Upserts team statistics for a specific game and team.
+    /// If statistics already exist, they are updated (replaced) with the latest data.
+    /// </summary>
+    private async Task UpsertTeamStatisticsAsync(
+        int gameId,
+        int teamId,
+        bool isHomeTeam,
+        NBAStatistics stats,
+        string teamLabel)
     {
+        logger.LogDebug("Upserting {TeamLabel} team statistics for GameId={GameId}, TeamId={TeamId}",
+            teamLabel, gameId, teamId);
+
+        // Check if statistics already exist (acceptance criteria: upsert replaces stale rows)
         var existing = await moneyballRepository.TeamStatistics.FirstOrDefaultAsync(
             ts => ts.GameId == gameId && ts.TeamId == teamId);
 
         if (existing == null)
         {
+            // CREATE: Statistics don't exist, create new
             var teamStats = new TeamStatistic
             {
                 GameId = gameId,
                 TeamId = teamId,
                 IsHomeTeam = isHomeTeam,
+
+                // Map all NBAStatistics fields (acceptance criteria: all fields mapped)
                 Points = stats.Points,
+
+                // Field goals
                 FieldGoalsMade = stats.FieldGoalsMade,
                 FieldGoalsAttempted = stats.FieldGoalsAttempted,
                 FieldGoalPercentage = stats.FieldGoalPercentage,
+
+                // Three-pointers
                 ThreePointsMade = stats.ThreePointsMade,
                 ThreePointsAttempted = stats.ThreePointsAttempted,
                 ThreePointPercentage = stats.ThreePointPercentage,
+
+                // Free throws
                 FreeThrowsMade = stats.FreeThrowsMade,
                 FreeThrowsAttempted = stats.FreeThrowsAttempted,
                 FreeThrowPercentage = stats.FreeThrowPercentage,
+
+                // Rebounds
                 Rebounds = stats.Rebounds,
                 OffensiveRebounds = stats.OffensiveRebounds,
                 DefensiveRebounds = stats.DefensiveRebounds,
+
+                // Other stats
                 Assists = stats.Assists,
                 Steals = stats.Steals,
                 Blocks = stats.Blocks,
                 Turnovers = stats.Turnovers,
-                PersonalFouls = stats.PersonalFouls
+                PersonalFouls = stats.PersonalFouls,
+
+                CreatedAt = DateTime.UtcNow
             };
 
             await moneyballRepository.TeamStatistics.AddAsync(teamStats);
+            logger.LogDebug("Created new statistics for {TeamLabel} team (GameId={GameId})", teamLabel, gameId);
         }
         else
         {
-            // Update existing statistics
+            // UPDATE: Statistics exist, replace with latest data (acceptance criteria: replaces stale rows)
+            logger.LogDebug("Updating existing statistics for {TeamLabel} team (GameId={GameId})", teamLabel, gameId);
+
             existing.Points = stats.Points;
+
+            // Field goals
             existing.FieldGoalsMade = stats.FieldGoalsMade;
             existing.FieldGoalsAttempted = stats.FieldGoalsAttempted;
             existing.FieldGoalPercentage = stats.FieldGoalPercentage;
+
+            // Three-pointers
             existing.ThreePointsMade = stats.ThreePointsMade;
             existing.ThreePointsAttempted = stats.ThreePointsAttempted;
             existing.ThreePointPercentage = stats.ThreePointPercentage;
+
+            // Free throws
             existing.FreeThrowsMade = stats.FreeThrowsMade;
             existing.FreeThrowsAttempted = stats.FreeThrowsAttempted;
             existing.FreeThrowPercentage = stats.FreeThrowPercentage;
+
+            // Rebounds
             existing.Rebounds = stats.Rebounds;
             existing.OffensiveRebounds = stats.OffensiveRebounds;
             existing.DefensiveRebounds = stats.DefensiveRebounds;
+
+            // Other stats
             existing.Assists = stats.Assists;
             existing.Steals = stats.Steals;
             existing.Blocks = stats.Blocks;

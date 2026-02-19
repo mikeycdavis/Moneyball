@@ -15,8 +15,6 @@ public class DataIngestionService_IngestNBATeamsAsyncTests
 {
     private readonly Mock<IMoneyballRepository> _mockMoneyballRepository;
     private readonly Mock<ISportsDataService> _mockSportsDataService;
-    private readonly Mock<IOddsDataService> _mockOddsDataService;
-    private readonly Mock<ILogger<DataIngestionService>> _mockLogger;
     private readonly DataIngestionService _service;
 
     // Mock repositories
@@ -27,8 +25,8 @@ public class DataIngestionService_IngestNBATeamsAsyncTests
     {
         _mockMoneyballRepository = new Mock<IMoneyballRepository>();
         _mockSportsDataService = new Mock<ISportsDataService>();
-        _mockOddsDataService = new Mock<IOddsDataService>();
-        _mockLogger = new Mock<ILogger<DataIngestionService>>();
+        var mockOddsDataService = new Mock<IOddsDataService>();
+        var mockLogger = new Mock<ILogger<DataIngestionService>>();
 
         _mockSportsRepo = new Mock<IRepository<Sport>>();
         _mockTeamsRepo = new Mock<ITeamRepository>();
@@ -40,8 +38,8 @@ public class DataIngestionService_IngestNBATeamsAsyncTests
         _service = new DataIngestionService(
             _mockMoneyballRepository.Object,
             _mockSportsDataService.Object,
-            _mockOddsDataService.Object,
-            _mockLogger.Object);
+            mockOddsDataService.Object,
+            mockLogger.Object);
     }
 
     [Fact]
@@ -601,8 +599,6 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
 {
     private readonly Mock<IMoneyballRepository> _mockMoneyballRepository;
     private readonly Mock<ISportsDataService> _mockSportsDataService;
-    private readonly Mock<IOddsDataService> _mockOddsDataService;
-    private readonly Mock<ILogger<DataIngestionService>> _mockLogger;
     private readonly DataIngestionService _service;
 
     // Mock repositories
@@ -614,8 +610,8 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
     {
         _mockMoneyballRepository = new Mock<IMoneyballRepository>();
         _mockSportsDataService = new Mock<ISportsDataService>();
-        _mockOddsDataService = new Mock<IOddsDataService>();
-        _mockLogger = new Mock<ILogger<DataIngestionService>>();
+        var mockOddsDataService = new Mock<IOddsDataService>();
+        var mockLogger = new Mock<ILogger<DataIngestionService>>();
 
         _mockSportsRepo = new Mock<IRepository<Sport>>();
         _mockTeamsRepo = new Mock<ITeamRepository>();
@@ -629,8 +625,8 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
         _service = new DataIngestionService(
             _mockMoneyballRepository.Object,
             _mockSportsDataService.Object,
-            _mockOddsDataService.Object,
-            _mockLogger.Object);
+            mockOddsDataService.Object,
+            mockLogger.Object);
     }
 
     [Fact]
@@ -1356,5 +1352,567 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
             });
         }
         return games;
+    }
+}
+
+public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
+{
+    private readonly Mock<IMoneyballRepository> _mockMoneyballRepository;
+    private readonly Mock<ISportsDataService> _mockSportsDataService;
+    private readonly DataIngestionService _service;
+
+    // Mock repositories
+    private readonly Mock<IRepository<Sport>> _mockSportsRepo;
+    private readonly Mock<IGameRepository> _mockGamesRepo;
+    private readonly Mock<IRepository<TeamStatistic>> _mockTeamStatsRepo;
+
+    public DataIngestionService_IngestNBAGameStatisticsAsyncTests()
+    {
+        _mockMoneyballRepository = new Mock<IMoneyballRepository>();
+        _mockSportsDataService = new Mock<ISportsDataService>();
+        var mockOddsDataService = new Mock<IOddsDataService>();
+        var mockLogger = new Mock<ILogger<DataIngestionService>>();
+
+        _mockSportsRepo = new Mock<IRepository<Sport>>();
+        _mockGamesRepo = new Mock<IGameRepository>();
+        _mockTeamStatsRepo = new Mock<IRepository<TeamStatistic>>();
+
+        // Wire up unit of work
+        _mockMoneyballRepository.Setup(u => u.Sports).Returns(_mockSportsRepo.Object);
+        _mockMoneyballRepository.Setup(u => u.Games).Returns(_mockGamesRepo.Object);
+        _mockMoneyballRepository.Setup(u => u.TeamStatistics).Returns(_mockTeamStatsRepo.Object);
+
+        _service = new DataIngestionService(
+            _mockMoneyballRepository.Object,
+            _mockSportsDataService.Object,
+            mockOddsDataService.Object,
+            mockLogger.Object);
+    }
+
+    [Fact]
+    public async Task IngestNBAGameStatisticsAsync_NewStatistics_CreatesBothHomeAndAway()
+    {
+        // Arrange
+        var gameId = "game-123";
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var game = new Game { GameId = 1, ExternalGameId = gameId, HomeTeamId = 10, AwayTeamId = 20 };
+
+        SetupBasicMocks(nbaSport, game);
+
+        var statistics = CreateTestStatistics();
+        _mockSportsDataService
+            .Setup(s => s.GetNBAGameStatisticsAsync(gameId))
+            .ReturnsAsync(statistics);
+
+        // No existing statistics (FirstOrDefaultAsync returns null)
+        _mockTeamStatsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<TeamStatistic, bool>>>()))
+            .ReturnsAsync((TeamStatistic?)null);
+
+        var addedStats = new List<TeamStatistic>();
+        _mockTeamStatsRepo
+            .Setup(r => r.AddAsync(It.IsAny<TeamStatistic>()))
+            .Callback<TeamStatistic>(s => addedStats.Add(s))
+            .ReturnsAsync((TeamStatistic s) => s);
+
+        _mockMoneyballRepository.Setup(u => u.SaveChangesAsync()).ReturnsAsync(2);
+
+        // Act
+        await _service.IngestNBAGameStatisticsAsync(gameId);
+
+        // Assert
+        addedStats.Should().HaveCount(2, "both home and away statistics should be created");
+
+        var homeStat = addedStats.FirstOrDefault(s => s.IsHomeTeam);
+        var awayStat = addedStats.FirstOrDefault(s => !s.IsHomeTeam);
+
+        homeStat.Should().NotBeNull();
+        awayStat.Should().NotBeNull();
+
+        // Verify home team stats
+        homeStat.GameId.Should().Be(1);
+        homeStat.TeamId.Should().Be(10);
+        homeStat.IsHomeTeam.Should().BeTrue();
+        homeStat.Points.Should().Be(110);
+        homeStat.Assists.Should().Be(25);
+
+        // Verify away team stats
+        awayStat.GameId.Should().Be(1);
+        awayStat.TeamId.Should().Be(20);
+        awayStat.IsHomeTeam.Should().BeFalse();
+        awayStat.Points.Should().Be(105);
+        awayStat.Assists.Should().Be(22);
+    }
+
+    [Fact]
+    public async Task IngestNBAGameStatisticsAsync_AllFieldsMapped_MapsCorrectly()
+    {
+        // Arrange
+        var gameId = "game-123";
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var game = new Game { GameId = 1, ExternalGameId = gameId, HomeTeamId = 10, AwayTeamId = 20 };
+
+        SetupBasicMocks(nbaSport, game);
+
+        var statistics = CreateTestStatistics();
+        _mockSportsDataService
+            .Setup(s => s.GetNBAGameStatisticsAsync(gameId))
+            .ReturnsAsync(statistics);
+
+        _mockTeamStatsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<TeamStatistic, bool>>>()))
+            .ReturnsAsync((TeamStatistic?)null);
+
+        var addedStats = new List<TeamStatistic>();
+        _mockTeamStatsRepo
+            .Setup(r => r.AddAsync(It.IsAny<TeamStatistic>()))
+            .Callback<TeamStatistic>(s => addedStats.Add(s))
+            .ReturnsAsync((TeamStatistic s) => s);
+
+        _mockMoneyballRepository.Setup(u => u.SaveChangesAsync()).ReturnsAsync(2);
+
+        // Act
+        await _service.IngestNBAGameStatisticsAsync(gameId);
+
+        // Assert - verify ALL fields mapped (acceptance criteria)
+        var homeStat = addedStats.First(s => s.IsHomeTeam);
+
+        homeStat.Points.Should().Be(110);
+        homeStat.FieldGoalsMade.Should().Be(42);
+        homeStat.FieldGoalsAttempted.Should().Be(88);
+        homeStat.FieldGoalPercentage.Should().Be(0.477m);
+        homeStat.ThreePointsMade.Should().Be(12);
+        homeStat.ThreePointsAttempted.Should().Be(35);
+        homeStat.ThreePointPercentage.Should().Be(0.343m);
+        homeStat.FreeThrowsMade.Should().Be(14);
+        homeStat.FreeThrowsAttempted.Should().Be(18);
+        homeStat.FreeThrowPercentage.Should().Be(0.778m);
+        homeStat.Rebounds.Should().Be(48);
+        homeStat.OffensiveRebounds.Should().Be(10);
+        homeStat.DefensiveRebounds.Should().Be(38);
+        homeStat.Assists.Should().Be(25);
+        homeStat.Steals.Should().Be(8);
+        homeStat.Blocks.Should().Be(5);
+        homeStat.Turnovers.Should().Be(12);
+        homeStat.PersonalFouls.Should().Be(20);
+    }
+
+    [Fact]
+    public async Task IngestNBAGameStatisticsAsync_ExistingStatistics_UpdatesStaleRows()
+    {
+        // Arrange
+        var gameId = "game-123";
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var game = new Game { GameId = 1, ExternalGameId = gameId, HomeTeamId = 10, AwayTeamId = 20 };
+
+        SetupBasicMocks(nbaSport, game);
+
+        var statistics = CreateTestStatistics();
+        _mockSportsDataService
+            .Setup(s => s.GetNBAGameStatisticsAsync(gameId))
+            .ReturnsAsync(statistics);
+
+        // Existing stale statistics
+        var existingHomeStat = new TeamStatistic
+        {
+            TeamStatisticId = 1,
+            GameId = 1,
+            TeamId = 10,
+            IsHomeTeam = true,
+            Points = 50, // Stale halftime score
+            Assists = 12,
+            Rebounds = 20
+        };
+
+        var existingAwayStat = new TeamStatistic
+        {
+            TeamStatisticId = 2,
+            GameId = 1,
+            TeamId = 20,
+            IsHomeTeam = false,
+            Points = 48,
+            Assists = 10,
+            Rebounds = 18
+        };
+
+        _mockTeamStatsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.Is<Expression<Func<TeamStatistic, bool>>>(
+                expr => expr.Compile()(existingHomeStat))))
+            .ReturnsAsync(existingHomeStat);
+
+        _mockTeamStatsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.Is<Expression<Func<TeamStatistic, bool>>>(
+                expr => expr.Compile()(existingAwayStat))))
+            .ReturnsAsync(existingAwayStat);
+
+        var updatedStats = new List<TeamStatistic>();
+        _mockTeamStatsRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<TeamStatistic>()))
+            .Callback<TeamStatistic>(s => updatedStats.Add(s))
+            .Returns(Task.CompletedTask);
+
+        _mockMoneyballRepository.Setup(u => u.SaveChangesAsync()).ReturnsAsync(2);
+
+        // Act
+        await _service.IngestNBAGameStatisticsAsync(gameId);
+
+        // Assert - verify stale rows replaced (acceptance criteria)
+        updatedStats.Should().HaveCount(2, "both home and away statistics should be updated");
+
+        existingHomeStat.Points.Should().Be(110, "stale score should be replaced");
+        existingHomeStat.Assists.Should().Be(25, "stale assists should be replaced");
+        existingHomeStat.Rebounds.Should().Be(48, "stale rebounds should be replaced");
+
+        existingAwayStat.Points.Should().Be(105);
+        existingAwayStat.Assists.Should().Be(22);
+        existingAwayStat.Rebounds.Should().Be(44);
+
+        _mockTeamStatsRepo.Verify(r => r.AddAsync(It.IsAny<TeamStatistic>()), Times.Never,
+            "should not add new rows when updating existing");
+    }
+
+    [Fact]
+    public async Task IngestNBAGameStatisticsAsync_NullOrEmptyGameId_ThrowsArgumentException()
+    {
+        // Act & Assert - null
+        var exception = await Assert.ThrowsAsync<ArgumentException>(
+            () => _service.IngestNBAGameStatisticsAsync(null!));
+        exception.ParamName.Should().Be("externalGameId");
+
+        // Act & Assert - empty
+        exception = await Assert.ThrowsAsync<ArgumentException>(
+            () => _service.IngestNBAGameStatisticsAsync(""));
+        exception.ParamName.Should().Be("externalGameId");
+
+        // Act & Assert - whitespace
+        exception = await Assert.ThrowsAsync<ArgumentException>(
+            () => _service.IngestNBAGameStatisticsAsync("   "));
+        exception.ParamName.Should().Be("externalGameId");
+    }
+
+    [Fact]
+    public async Task IngestNBAGameStatisticsAsync_NBASportNotFound_ThrowsException()
+    {
+        // Arrange
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync((Sport?)null);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _service.IngestNBAGameStatisticsAsync("game-123"));
+
+        exception.Message.Should().Contain("NBA sport not found");
+    }
+
+    [Fact]
+    public async Task IngestNBAGameStatisticsAsync_GameNotFound_ThrowsException()
+    {
+        // Arrange
+        var gameId = "nonexistent-game";
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync(nbaSport);
+
+        _mockGamesRepo
+            .Setup(r => r.GetGameByExternalIdAsync(gameId, 1))
+            .ReturnsAsync((Game?)null);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _service.IngestNBAGameStatisticsAsync(gameId));
+
+        exception.Message.Should().Contain("not found in database");
+        exception.Message.Should().Contain("IngestNBAScheduleAsync");
+    }
+
+    [Fact]
+    public async Task IngestNBAGameStatisticsAsync_APIReturnsNull_LogsWarningAndReturns()
+    {
+        // Arrange
+        var gameId = "game-123";
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var game = new Game { GameId = 1, ExternalGameId = gameId, HomeTeamId = 10, AwayTeamId = 20 };
+
+        SetupBasicMocks(nbaSport, game);
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAGameStatisticsAsync(gameId))
+            .ReturnsAsync((NBAGameStatistics?)null);
+
+        // Act
+        await _service.IngestNBAGameStatisticsAsync(gameId);
+
+        // Assert
+        _mockTeamStatsRepo.Verify(r => r.AddAsync(It.IsAny<TeamStatistic>()), Times.Never);
+        _mockMoneyballRepository.Verify(u => u.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task IngestNBAGameStatisticsAsync_PartialUpdate_HomeExists_AwayNew()
+    {
+        // Arrange
+        var gameId = "game-123";
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var game = new Game { GameId = 1, ExternalGameId = gameId, HomeTeamId = 10, AwayTeamId = 20 };
+
+        SetupBasicMocks(nbaSport, game);
+
+        var statistics = CreateTestStatistics();
+        _mockSportsDataService
+            .Setup(s => s.GetNBAGameStatisticsAsync(gameId))
+            .ReturnsAsync(statistics);
+
+        // Home exists, away is new
+        var existingHomeStat = new TeamStatistic
+        {
+            TeamStatisticId = 1,
+            GameId = 1,
+            TeamId = 10,
+            IsHomeTeam = true
+        };
+
+        _mockTeamStatsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.Is<Expression<Func<TeamStatistic, bool>>>(
+                expr => expr.Compile()(existingHomeStat))))
+            .ReturnsAsync(existingHomeStat);
+
+        _mockTeamStatsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.Is<Expression<Func<TeamStatistic, bool>>>(
+                expr => !expr.Compile()(existingHomeStat))))
+            .ReturnsAsync((TeamStatistic?)null);
+
+        var addedStats = new List<TeamStatistic>();
+        _mockTeamStatsRepo
+            .Setup(r => r.AddAsync(It.IsAny<TeamStatistic>()))
+            .Callback<TeamStatistic>(s => addedStats.Add(s))
+            .ReturnsAsync((TeamStatistic s) => s);
+
+        _mockTeamStatsRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<TeamStatistic>()))
+            .Returns(Task.CompletedTask);
+
+        _mockMoneyballRepository.Setup(u => u.SaveChangesAsync()).ReturnsAsync(2);
+
+        // Act
+        await _service.IngestNBAGameStatisticsAsync(gameId);
+
+        // Assert
+        addedStats.Should().ContainSingle("only away stats should be added");
+        addedStats[0].IsHomeTeam.Should().BeFalse();
+        _mockTeamStatsRepo.Verify(r => r.UpdateAsync(It.IsAny<TeamStatistic>()), Times.Once,
+            "home stats should be updated");
+    }
+
+    [Fact]
+    public async Task IngestNBAGameStatisticsAsync_MultipleCallsSameGame_AlwaysUpdates()
+    {
+        // Arrange - simulate calling the method twice (e.g., halftime and final)
+        var gameId = "game-123";
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var game = new Game { GameId = 1, ExternalGameId = gameId, HomeTeamId = 10, AwayTeamId = 20 };
+
+        SetupBasicMocks(nbaSport, game);
+
+        // First call - halftime stats
+        var halftimeStats = CreateTestStatistics();
+        halftimeStats.Home.Statistics.Points = 55;
+        halftimeStats.Away.Statistics.Points = 50;
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAGameStatisticsAsync(gameId))
+            .ReturnsAsync(halftimeStats);
+
+        _mockTeamStatsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<TeamStatistic, bool>>>()))
+            .ReturnsAsync((TeamStatistic?)null);
+
+        var addedStats = new List<TeamStatistic>();
+        _mockTeamStatsRepo
+            .Setup(r => r.AddAsync(It.IsAny<TeamStatistic>()))
+            .Callback<TeamStatistic>(s => addedStats.Add(s))
+            .ReturnsAsync((TeamStatistic s) => s);
+
+        _mockMoneyballRepository.Setup(u => u.SaveChangesAsync()).ReturnsAsync(2);
+
+        // Act - first call
+        await _service.IngestNBAGameStatisticsAsync(gameId);
+
+        // Assert first call
+        addedStats.Should().HaveCount(2);
+        var homeStatFirst = addedStats.First(s => s.IsHomeTeam);
+        homeStatFirst.Points.Should().Be(55);
+
+        // Arrange - second call with final stats
+        var finalStats = CreateTestStatistics();
+        finalStats.Home.Statistics.Points = 110;
+        finalStats.Away.Statistics.Points = 105;
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAGameStatisticsAsync(gameId))
+            .ReturnsAsync(finalStats);
+
+        // Now return the previously added stats as existing
+        _mockTeamStatsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<TeamStatistic, bool>>>()))
+            .ReturnsAsync((Expression<Func<TeamStatistic, bool>> expr) =>
+                addedStats.FirstOrDefault(s => expr.Compile()(s)));
+
+        var updatedStats = new List<TeamStatistic>();
+        _mockTeamStatsRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<TeamStatistic>()))
+            .Callback<TeamStatistic>(s => updatedStats.Add(s))
+            .Returns(Task.CompletedTask);
+
+        // Act - second call
+        await _service.IngestNBAGameStatisticsAsync(gameId);
+
+        // Assert second call - stale rows replaced
+        updatedStats.Should().HaveCount(2, "both stats should be updated on second call");
+        homeStatFirst.Points.Should().Be(110, "halftime score should be replaced with final");
+    }
+
+    [Fact]
+    public async Task IngestNBAGameStatisticsAsync_ZeroValues_StoresCorrectly()
+    {
+        // Arrange
+        var gameId = "game-123";
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var game = new Game { GameId = 1, ExternalGameId = gameId, HomeTeamId = 10, AwayTeamId = 20 };
+
+        SetupBasicMocks(nbaSport, game);
+
+        var statistics = new NBAGameStatistics
+        {
+            Id = gameId,
+            Home = new NBATeamStatistics
+            {
+                Id = "home-team",
+                Name = "Home Team",
+                Statistics = new NBAStatistics
+                {
+                    Points = 0,
+                    FieldGoalsMade = 0,
+                    Assists = 0,
+                    Rebounds = 0,
+                    Turnovers = 0
+                }
+            },
+            Away = new NBATeamStatistics
+            {
+                Id = "away-team",
+                Name = "Away Team",
+                Statistics = new NBAStatistics
+                {
+                    Points = 0,
+                    FieldGoalsMade = 0,
+                    Assists = 0,
+                    Rebounds = 0,
+                    Turnovers = 0
+                }
+            }
+        };
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAGameStatisticsAsync(gameId))
+            .ReturnsAsync(statistics);
+
+        _mockTeamStatsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<TeamStatistic, bool>>>()))
+            .ReturnsAsync((TeamStatistic?)null);
+
+        var addedStats = new List<TeamStatistic>();
+        _mockTeamStatsRepo
+            .Setup(r => r.AddAsync(It.IsAny<TeamStatistic>()))
+            .Callback<TeamStatistic>(s => addedStats.Add(s))
+            .ReturnsAsync((TeamStatistic s) => s);
+
+        _mockMoneyballRepository.Setup(u => u.SaveChangesAsync()).ReturnsAsync(2);
+
+        // Act
+        await _service.IngestNBAGameStatisticsAsync(gameId);
+
+        // Assert - zero values should be stored (not treated as null/missing)
+        addedStats.Should().HaveCount(2);
+        addedStats.Should().AllSatisfy(s =>
+        {
+            s.Points.Should().Be(0);
+            s.Assists.Should().Be(0);
+            s.Rebounds.Should().Be(0);
+        });
+    }
+
+    // Helper methods
+    private void SetupBasicMocks(Sport nbaSport, Game game)
+    {
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync(nbaSport);
+
+        _mockGamesRepo
+            .Setup(r => r.GetGameByExternalIdAsync(game.ExternalGameId!, nbaSport.SportId))
+            .ReturnsAsync(game);
+    }
+
+    private static NBAGameStatistics CreateTestStatistics()
+    {
+        return new NBAGameStatistics
+        {
+            Id = "game-123",
+            Home = new NBATeamStatistics
+            {
+                Id = "home-team",
+                Name = "Home Team",
+                Statistics = new NBAStatistics
+                {
+                    Points = 110,
+                    FieldGoalsMade = 42,
+                    FieldGoalsAttempted = 88,
+                    FieldGoalPercentage = 0.477m,
+                    ThreePointsMade = 12,
+                    ThreePointsAttempted = 35,
+                    ThreePointPercentage = 0.343m,
+                    FreeThrowsMade = 14,
+                    FreeThrowsAttempted = 18,
+                    FreeThrowPercentage = 0.778m,
+                    Rebounds = 48,
+                    OffensiveRebounds = 10,
+                    DefensiveRebounds = 38,
+                    Assists = 25,
+                    Steals = 8,
+                    Blocks = 5,
+                    Turnovers = 12,
+                    PersonalFouls = 20
+                }
+            },
+            Away = new NBATeamStatistics
+            {
+                Id = "away-team",
+                Name = "Away Team",
+                Statistics = new NBAStatistics
+                {
+                    Points = 105,
+                    FieldGoalsMade = 39,
+                    FieldGoalsAttempted = 85,
+                    FieldGoalPercentage = 0.459m,
+                    ThreePointsMade = 10,
+                    ThreePointsAttempted = 30,
+                    ThreePointPercentage = 0.333m,
+                    FreeThrowsMade = 17,
+                    FreeThrowsAttempted = 22,
+                    FreeThrowPercentage = 0.773m,
+                    Rebounds = 44,
+                    OffensiveRebounds = 8,
+                    DefensiveRebounds = 36,
+                    Assists = 22,
+                    Steals = 7,
+                    Blocks = 4,
+                    Turnovers = 14,
+                    PersonalFouls = 18
+                }
+            }
+        };
     }
 }
