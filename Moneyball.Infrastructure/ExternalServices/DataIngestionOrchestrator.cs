@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Moneyball.Core.Interfaces.ExternalAPIs;
 using Moneyball.Core.Interfaces.ExternalServices;
 
 namespace Moneyball.Infrastructure.ExternalServices;
