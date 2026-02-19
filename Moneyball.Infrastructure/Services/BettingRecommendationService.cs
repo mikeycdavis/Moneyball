@@ -1,7 +1,7 @@
 ﻿using Moneyball.Core.DTOs;
 using Moneyball.Core.Entities;
 using Moneyball.Core.Interfaces;
-using Moneyball.Infrastructure.ML;
+//using Moneyball.Infrastructure.ML;
 
 namespace Moneyball.Infrastructure.Services
 {
@@ -9,8 +9,8 @@ namespace Moneyball.Infrastructure.Services
     {
         private readonly IGameRepository _gameRepository;
         private readonly IPredictionRepository _predictionRepository;
-        private readonly IGameOddsRepository _oddsRepository;
-        private readonly KellyCriterionCalculator _kellyCalculator;
+        private readonly IOddsRepository _oddsRepository;
+        //private readonly KellyCriterionCalculator _kellyCalculator;
 
         //public async Task<BettingRecommendationResponse> GetRecommendationsAsync(
         //    BettingRecommendationRequest request)

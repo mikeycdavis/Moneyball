@@ -26,7 +26,7 @@ public class MoneyballRepository : IMoneyballRepository
 
     public IGameRepository Games { get; }
     public ITeamRepository Teams { get; }
-    public IGameOddsRepository Odds { get; }
+    public IOddsRepository Odds { get; }
     public IPredictionRepository Predictions { get; }
     public IModelRepository Models { get; }
     public IRepository<Sport> Sports { get; }

@@ -7,15 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="ExternalAPIs\**" />
     <Compile Remove="ML\**" />
-    <Compile Remove="Services\**" />
-    <EmbeddedResource Remove="ExternalAPIs\**" />
     <EmbeddedResource Remove="ML\**" />
-    <EmbeddedResource Remove="Services\**" />
-    <None Remove="ExternalAPIs\**" />
     <None Remove="ML\**" />
-    <None Remove="Services\**" />
   </ItemGroup>
 
   <ItemGroup>

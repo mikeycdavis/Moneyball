@@ -2,7 +2,7 @@
 
 namespace Moneyball.Core.Interfaces
 {
-    public interface IGameOddsRepository : IRepository<Odds>
+    public interface IOddsRepository : IRepository<Odds>
     {
         Task<Odds?> GetLatestOddsAsync(int gameId, string? bookmaker = null);
         Task<IEnumerable<Odds>> GetOddsHistoryAsync(int gameId);

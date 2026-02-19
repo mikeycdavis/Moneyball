@@ -4,7 +4,7 @@ using Moneyball.Core.Interfaces.ExternalAPIs;
 using Moneyball.Service.ExternalAPIs.DTO;
 using System.Net.Http.Json;
 
-namespace Moneyball.Infrastructure.ExternalAPIs;
+namespace Moneyball.Infrastructure.ExternalAPIs.Odds;
 
 public class OddsDataService : IOddsDataService
 {

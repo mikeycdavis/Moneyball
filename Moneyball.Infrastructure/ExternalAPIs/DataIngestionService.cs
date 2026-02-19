@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moneyball.Core.Entities;
 using Moneyball.Core.Enums;
+using Moneyball.Core.Interfaces;
 using Moneyball.Core.Interfaces.ExternalAPIs;
-using Moneyball.Infrastructure.Repositories;
 using Moneyball.Service.ExternalAPIs.DTO;
 
 namespace Moneyball.Infrastructure.ExternalAPIs;
@@ -292,7 +292,7 @@ public class DataIngestionService : IDataIngestionService
                 // Process each bookmaker
                 foreach (var bookmaker in oddsGame.Bookmakers)
                 {
-                    var gameOdds = new GameOdds
+                    var gameOdds = new Core.Entities.Odds
                     {
                         GameId = matchingGame.GameId,
                         BookmakerName = bookmaker.Title,
@@ -342,7 +342,7 @@ public class DataIngestionService : IDataIngestionService
                         }
                     }
 
-                    await _moneyballRepository.GameOdds.AddAsync(gameOdds);
+                    await _moneyballRepository.Odds.AddAsync(gameOdds);
                     oddsAdded++;
                 }
             }
