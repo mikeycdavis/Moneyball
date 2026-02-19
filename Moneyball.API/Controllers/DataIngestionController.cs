@@ -1,26 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Moneyball.Core.Interfaces.ExternalAPIs;
+using Moneyball.Core.Interfaces.ExternalServices;
 
 namespace Moneyball.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class DataIngestionController : ControllerBase
+public class DataIngestionController(
+    IDataIngestionService dataIngestionService,
+    IDataIngestionOrchestrator orchestrator,
+    ILogger<DataIngestionController> logger) : ControllerBase
 {
-    private readonly IDataIngestionService _dataIngestionService;
-    private readonly IDataIngestionOrchestrator _orchestrator;
-    private readonly ILogger<DataIngestionController> _logger;
-
-    public DataIngestionController(
-        IDataIngestionService dataIngestionService,
-        IDataIngestionOrchestrator orchestrator,
-        ILogger<DataIngestionController> logger)
-    {
-        _dataIngestionService = dataIngestionService;
-        _orchestrator = orchestrator;
-        _logger = logger;
-    }
-
     /// <summary>
     /// Run full data ingestion for a sport (teams, schedule, odds)
     /// </summary>
@@ -30,13 +19,13 @@ public class DataIngestionController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Manual full ingestion triggered for sport {SportId}", sportId);
-            await _orchestrator.RunFullIngestionAsync(sportId);
+            logger.LogInformation("Manual full ingestion triggered for sport {SportId}", sportId);
+            await orchestrator.RunFullIngestionAsync(sportId);
             return Ok(new { message = $"Full ingestion completed for sport {sportId}" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during full ingestion");
+            logger.LogError(ex, "Error during full ingestion");
             return StatusCode(500, new { error = ex.Message });
         }
     }
@@ -49,13 +38,13 @@ public class DataIngestionController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Manual NBA teams ingestion triggered");
-            await _dataIngestionService.IngestNBATeamsAsync();
+            logger.LogInformation("Manual NBA teams ingestion triggered");
+            await dataIngestionService.IngestNBATeamsAsync();
             return Ok(new { message = "NBA teams ingestion completed" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error ingesting NBA teams");
+            logger.LogError(ex, "Error ingesting NBA teams");
             return StatusCode(500, new { error = ex.Message });
         }
     }
@@ -75,13 +64,13 @@ public class DataIngestionController : ControllerBase
             var start = startDate ?? DateTime.UtcNow.Date;
             var end = endDate ?? DateTime.UtcNow.Date.AddDays(7);
 
-            _logger.LogInformation("Manual NBA schedule ingestion triggered from {Start} to {End}", start, end);
-            await _dataIngestionService.IngestNBAScheduleAsync(start, end);
+            logger.LogInformation("Manual NBA schedule ingestion triggered from {Start} to {End}", start, end);
+            await dataIngestionService.IngestNBAScheduleAsync(start, end);
             return Ok(new { message = $"NBA schedule ingestion completed from {start:yyyy-MM-dd} to {end:yyyy-MM-dd}" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error ingesting NBA schedule");
+            logger.LogError(ex, "Error ingesting NBA schedule");
             return StatusCode(500, new { error = ex.Message });
         }
     }
@@ -95,13 +84,13 @@ public class DataIngestionController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Manual odds ingestion triggered for {Sport}", sport);
-            await _dataIngestionService.IngestOddsAsync(sport);
+            logger.LogInformation("Manual odds ingestion triggered for {Sport}", sport);
+            await dataIngestionService.IngestOddsAsync(sport);
             return Ok(new { message = $"Odds ingestion completed for {sport}" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error ingesting odds");
+            logger.LogError(ex, "Error ingesting odds");
             return StatusCode(500, new { error = ex.Message });
         }
     }
@@ -114,13 +103,13 @@ public class DataIngestionController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Manual scheduled updates triggered");
-            await _orchestrator.RunScheduledUpdatesAsync();
+            logger.LogInformation("Manual scheduled updates triggered");
+            await orchestrator.RunScheduledUpdatesAsync();
             return Ok(new { message = "Scheduled updates completed" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during scheduled updates");
+            logger.LogError(ex, "Error during scheduled updates");
             return StatusCode(500, new { error = ex.Message });
         }
     }
@@ -134,13 +123,13 @@ public class DataIngestionController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Manual game results update triggered for sport {SportId}", sportId);
-            await _dataIngestionService.UpdateGameResultsAsync(sportId);
+            logger.LogInformation("Manual game results update triggered for sport {SportId}", sportId);
+            await dataIngestionService.UpdateGameResultsAsync(sportId);
             return Ok(new { message = $"Game results updated for sport {sportId}" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating game results");
+            logger.LogError(ex, "Error updating game results");
             return StatusCode(500, new { error = ex.Message });
         }
     }
