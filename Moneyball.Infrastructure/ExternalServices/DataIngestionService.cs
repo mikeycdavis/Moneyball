@@ -157,44 +157,78 @@ public class DataIngestionService(
         }
     }
 
+    /// <summary>
+    /// Ingests NBA schedule from SportRadar API for a given date range.
+    /// Upserts games: creates new games, updates existing games with scores and status changes.
+    /// </summary>
+    /// <param name="startDate">Start date for schedule fetch</param>
+    /// <param name="endDate">End date for schedule fetch</param>
     public async Task IngestNBAScheduleAsync(DateTime startDate, DateTime endDate)
     {
-        logger.LogInformation("Starting NBA schedule ingestion from {StartDate} to {EndDate}",
+        logger.LogInformation("Starting NBA schedule ingestion from {StartDate:yyyy-MM-dd} to {EndDate:yyyy-MM-dd}",
             startDate, endDate);
 
         try
         {
-            var games = await sportsDataService.GetNBAScheduleAsync(startDate, endDate);
+            // Step 1: Get NBA sport entity
             var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
 
             if (nbaSport == null)
             {
-                logger.LogError("NBA sport not found in database");
+                logger.LogError("NBA sport not found in database. Ensure Sports seed data exists.");
+                throw new InvalidOperationException("NBA sport not found in database. Run database migrations or execute DatabaseSetup.sql to seed Sports table.");
+            }
+
+            // Step 2: Fetch schedule from SportRadar API
+            logger.LogInformation("Fetching NBA schedule from SportRadar API");
+            var apiGames = (await sportsDataService.GetNBAScheduleAsync(startDate, endDate)).ToList();
+
+            if (!apiGames.Any())
+            {
+                logger.LogInformation("No games returned from SportRadar API for date range {StartDate:yyyy-MM-dd} to {EndDate:yyyy-MM-dd}",
+                    startDate, endDate);
                 return;
             }
 
+            logger.LogInformation("Received {Count} games from SportRadar API", apiGames.Count());
+
+            // Step 3: Process each game (upsert logic)
             var gamesAdded = 0;
             var gamesUpdated = 0;
+            var gamesUnchanged = 0;
 
-            foreach (var apiGame in games)
+            foreach (var apiGame in apiGames)
             {
-                var existingGame = await moneyballRepository.Games.GetGameByExternalIdAsync(
-                    apiGame.Id, nbaSport.SportId);
+                // Validate API data
+                if (string.IsNullOrWhiteSpace(apiGame.Id))
+                {
+                    logger.LogWarning("Skipping game with missing ID");
+                    continue;
+                }
 
-                var homeTeam = await moneyballRepository.Teams.GetByExternalIdAsync(
-                    apiGame.Home.Id, nbaSport.SportId);
-                var awayTeam = await moneyballRepository.Teams.GetByExternalIdAsync(
-                    apiGame.Away.Id, nbaSport.SportId);
+                if (string.IsNullOrWhiteSpace(apiGame.Home.Id) || string.IsNullOrWhiteSpace(apiGame.Away.Id))
+                {
+                    logger.LogWarning("Skipping game {GameId} with missing team IDs", apiGame.Id);
+                    continue;
+                }
+
+                // Look up teams by external ID
+                var homeTeam = await moneyballRepository.Teams.GetByExternalIdAsync(apiGame.Home.Id, nbaSport.SportId);
+                var awayTeam = await moneyballRepository.Teams.GetByExternalIdAsync(apiGame.Away.Id, nbaSport.SportId);
 
                 if (homeTeam == null || awayTeam == null)
                 {
-                    logger.LogWarning("Teams not found for game {GameId}. Home: {HomeId}, Away: {AwayId}",
+                    logger.LogWarning("Teams not found for game {GameId}. Home: {HomeId}, Away: {AwayId}. Run team ingestion first.",
                         apiGame.Id, apiGame.Home.Id, apiGame.Away.Id);
                     continue;
                 }
 
+                // Check if game already exists
+                var existingGame = await moneyballRepository.Games.GetGameByExternalIdAsync(apiGame.Id, nbaSport.SportId);
+
                 if (existingGame == null)
                 {
+                    // CREATE: Game doesn't exist, create new
                     var newGame = new Game
                     {
                         SportId = nbaSport.SportId,
@@ -205,54 +239,81 @@ public class DataIngestionService(
                         Status = MapGameStatus(apiGame.Status),
                         HomeScore = apiGame.HomePoints,
                         AwayScore = apiGame.AwayPoints,
-                        IsComplete = apiGame.Status == "closed"
+                        IsComplete = IsGameComplete(apiGame.Status),
+                        CreatedAt = DateTime.UtcNow
                     };
 
                     await moneyballRepository.Games.AddAsync(newGame);
                     gamesAdded++;
+
+                    logger.LogDebug("Creating new game: {Away} @ {Home} on {Date:yyyy-MM-dd} (Status: {Status})",
+                        awayTeam.Abbreviation, homeTeam.Abbreviation, apiGame.Scheduled, apiGame.Status);
                 }
                 else
                 {
-                    // Update game if there are changes
-                    var updated = false;
+                    // UPDATE: Game exists, check if any fields changed
+                    var hasChanges = false;
 
-                    if (existingGame.Status != MapGameStatus(apiGame.Status))
+                    // Map the new status
+                    var newStatus = MapGameStatus(apiGame.Status);
+                    var newIsComplete = IsGameComplete(apiGame.Status);
+
+                    // Check status change
+                    if (existingGame.Status != newStatus)
                     {
-                        existingGame.Status = MapGameStatus(apiGame.Status);
-                        updated = true;
+                        logger.LogInformation("Game {ExternalId} status changed: {OldStatus} → {NewStatus}",
+                            apiGame.Id, existingGame.Status, newStatus);
+                        existingGame.Status = newStatus;
+                        hasChanges = true;
                     }
 
+                    // Check IsComplete flag (acceptance criteria: flipped when status is closed)
+                    if (existingGame.IsComplete != newIsComplete)
+                    {
+                        logger.LogInformation("Game {ExternalId} completion status changed: IsComplete={IsComplete}",
+                            apiGame.Id, newIsComplete);
+                        existingGame.IsComplete = newIsComplete;
+                        hasChanges = true;
+                    }
+
+                    // Check home score change
                     if (apiGame.HomePoints.HasValue && existingGame.HomeScore != apiGame.HomePoints)
                     {
+                        logger.LogDebug("Game {ExternalId} home score updated: {OldScore} → {NewScore}",
+                            apiGame.Id, existingGame.HomeScore, apiGame.HomePoints);
                         existingGame.HomeScore = apiGame.HomePoints;
-                        updated = true;
+                        hasChanges = true;
                     }
 
+                    // Check away score change
                     if (apiGame.AwayPoints.HasValue && existingGame.AwayScore != apiGame.AwayPoints)
                     {
+                        logger.LogDebug("Game {ExternalId} away score updated: {OldScore} → {NewScore}",
+                            apiGame.Id, existingGame.AwayScore, apiGame.AwayPoints);
                         existingGame.AwayScore = apiGame.AwayPoints;
-                        updated = true;
+                        hasChanges = true;
                     }
 
-                    if (apiGame.Status == "closed" && !existingGame.IsComplete)
-                    {
-                        existingGame.IsComplete = true;
-                        updated = true;
-                    }
-
-                    if (updated)
+                    if (hasChanges)
                     {
                         existingGame.UpdatedAt = DateTime.UtcNow;
                         await moneyballRepository.Games.UpdateAsync(existingGame);
                         gamesUpdated++;
                     }
+                    else
+                    {
+                        gamesUnchanged++;
+                    }
                 }
             }
 
-            await moneyballRepository.SaveChangesAsync();
+            // Step 4: Save all changes in a single transaction
+            var changeCount = await moneyballRepository.SaveChangesAsync();
 
-            logger.LogInformation("NBA schedule ingestion complete. Added: {Added}, Updated: {Updated}",
-                gamesAdded, gamesUpdated);
+            // Step 5: Log final counts (acceptance criteria: counts logged)
+            logger.LogInformation(
+                "NBA schedule ingestion complete. Added: {Added}, Updated: {Updated}, Unchanged: {Unchanged}, Changed: {Changed}, Total processed: {Total}",
+                gamesAdded, gamesUpdated, gamesUnchanged, changeCount, apiGames.Count);
         }
         catch (Exception ex)
         {
@@ -497,18 +558,35 @@ public class DataIngestionService(
         }
     }
 
-    private GameStatus MapGameStatus(string apiStatus)
+    /// <summary>
+    /// Maps SportRadar API status strings to GameStatus enum.
+    /// </summary>
+    private static GameStatus MapGameStatus(string apiStatus)
     {
         return apiStatus.ToLower() switch
         {
             "scheduled" => GameStatus.Scheduled,
+            "created" => GameStatus.Scheduled,
             "inprogress" => GameStatus.InProgress,
+            "halftime" => GameStatus.InProgress,
             "closed" => GameStatus.Final,
             "complete" => GameStatus.Final,
+            "final" => GameStatus.Final,
             "postponed" => GameStatus.Postponed,
+            "delayed" => GameStatus.Postponed,
             "cancelled" => GameStatus.Cancelled,
             "canceled" => GameStatus.Cancelled,
-            _ => GameStatus.Scheduled
+            "suspended" => GameStatus.Postponed,
+            _ => GameStatus.Unknown // Default to unknown for unknown statuses
         };
+    }
+
+    /// <summary>
+    /// Determines if a game is complete based on its status.
+    /// </summary>
+    private static bool IsGameComplete(string apiStatus)
+    {
+        var status = apiStatus.ToLower();
+        return status == "closed" || status == "complete" || status == "final";
     }
 }

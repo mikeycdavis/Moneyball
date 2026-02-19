@@ -2,6 +2,7 @@
 {
     public enum GameStatus
     {
+        Unknown,
         Scheduled,
         InProgress,
         Final,
