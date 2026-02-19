@@ -2,9 +2,9 @@
 using Microsoft.Extensions.Logging;
 using Moneyball.Infrastructure.ExternalAPIs.SportsRadar;
 using Moneyball.Service.ExternalAPIs.DTO;
-using Shouldly;
 using Moq;
 using Moq.Protected;
+using Shouldly;
 using System.Net;
 using System.Text.Json;
 
@@ -76,20 +76,20 @@ internal static class SportsDataServiceFactory
 public class SportsDataService_ConstructorTests
 {
     [Fact]
-        public void Constructor_MissingApiKey_ThrowsInvalidOperationException()
-        {
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?>()) // no key
-                .Build();
+    public void Constructor_MissingApiKey_ThrowsInvalidOperationException()
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>()) // no key
+            .Build();
 
-            var ex = Should.Throw<InvalidOperationException>(() =>
-                new SportsDataService(
-                    new HttpClient(),
-                    config,
-                    Mock.Of<ILogger<SportsDataService>>()));
+        var ex = Should.Throw<InvalidOperationException>(() =>
+            new SportsDataService(
+                new HttpClient(),
+                config,
+                Mock.Of<ILogger<SportsDataService>>()));
 
-            ex.Message.ShouldContain("SportsData:ApiKey");
-        }
+        ex.Message.ShouldContain("SportsData:ApiKey");
+    }
 
     [Fact]
     public void Constructor_MissingBaseUrl_UsesDefaultUrl()

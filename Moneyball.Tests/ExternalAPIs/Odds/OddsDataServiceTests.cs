@@ -2,9 +2,9 @@
 using Microsoft.Extensions.Logging;
 using Moneyball.Infrastructure.ExternalAPIs.Odds;
 using Moneyball.Service.ExternalAPIs.DTO;
-using Shouldly;
 using Moq;
 using Moq.Protected;
+using Shouldly;
 using System.Net;
 using System.Text;
 using System.Text.Json;

@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Moneyball.Core.Entities;
 using Moneyball.Core.Interfaces.ExternalAPIs;
 using Moneyball.Service.ExternalAPIs.DTO;
 using System.Net.Http.Json;
