@@ -1,7 +1,7 @@
 ﻿using Moneyball.Core.Entities;
 using Moneyball.Core.Enums;
 
-namespace Moneyball.Core.Interfaces
+namespace Moneyball.Core.Interfaces.Repositories
 {
     public interface IModelRepository : IRepository<Model>
     {

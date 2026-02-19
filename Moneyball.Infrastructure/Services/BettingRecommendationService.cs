@@ -1,6 +1,6 @@
 ﻿using Moneyball.Core.DTOs;
 using Moneyball.Core.Entities;
-using Moneyball.Core.Interfaces;
+using Moneyball.Core.Interfaces.Repositories;
 //using Moneyball.Infrastructure.ML;
 
 namespace Moneyball.Infrastructure.Services

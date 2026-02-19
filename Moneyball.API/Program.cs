@@ -48,4 +48,7 @@ app.Services.MigrateDatabase();
 app.Run();
 
 // Make Program accessible for testing
-public partial class Program { }
+namespace Moneyball.API
+{
+    public partial class Program { }
+}

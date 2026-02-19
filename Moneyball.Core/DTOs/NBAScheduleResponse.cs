@@ -1,4 +1,4 @@
-﻿namespace Moneyball.Service.ExternalAPIs.DTO;
+﻿namespace Moneyball.Core.DTOs;
 
 // NBA API Response Models (based on SportRadar API structure)
 public class NBAScheduleResponse

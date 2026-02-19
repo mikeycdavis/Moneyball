@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Http.Resilience;
-using Moneyball.Core.Interfaces;
 using Moneyball.Core.Interfaces.ExternalAPIs;
-using Moneyball.Infrastructure.ExternalAPIs;
+using Moneyball.Core.Interfaces.ExternalServices;
+using Moneyball.Core.Interfaces.Repositories;
 using Moneyball.Infrastructure.ExternalAPIs.Odds;
 using Moneyball.Infrastructure.ExternalAPIs.SportsRadar;
+using Moneyball.Infrastructure.ExternalServices;
 using Moneyball.Infrastructure.Repositories;
 using Polly;
 using System.Reflection;

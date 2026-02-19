@@ -2,12 +2,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Moneyball.Core.Interfaces.ExternalAPIs;
-using Moneyball.Tests.HttpClients.TestInfrastructure;
+using Moneyball.Tests.ExternalAPIs.HttpClients.TestInfrastructure;
 using RichardSzalay.MockHttp;
 using Shouldly;
 using System.Net;
 
-namespace Moneyball.Tests.HttpClients;
+namespace Moneyball.Tests.ExternalAPIs.HttpClients;
 
 // ---------------------------------------------------------------------------
 // OddsDataService — retry on transient errors

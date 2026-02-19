@@ -2,7 +2,7 @@
 using Polly;
 using System.Net;
 
-namespace Moneyball.Tests.HttpClients.TestInfrastructure;
+namespace Moneyball.Tests.ExternalAPIs.HttpClients.TestInfrastructure;
 
 // ---------------------------------------------------------------------------
 // Shared pipeline — mirrors your DI registration exactly.

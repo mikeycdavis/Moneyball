@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moneyball.Core.Interfaces.ExternalAPIs;
+using Moneyball.Core.Interfaces.ExternalServices;
 
-namespace Moneyball.Infrastructure.ExternalAPIs;
+namespace Moneyball.Infrastructure.ExternalServices;
 
 public class DataIngestionOrchestrator(
     IDataIngestionService dataIngestionService,

@@ -5,7 +5,7 @@ using Moneyball.Infrastructure.ExternalAPIs.Odds;
 using Moneyball.Infrastructure.ExternalAPIs.SportsRadar;
 using RichardSzalay.MockHttp;
 
-namespace Moneyball.Tests.HttpClients.TestInfrastructure;
+namespace Moneyball.Tests.ExternalAPIs.HttpClients.TestInfrastructure;
 
 /// <summary>
 /// Directly instantiates a SportsDataService with a bare HttpClient and

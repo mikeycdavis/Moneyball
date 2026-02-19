@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Moneyball.Core.Entities;
-using Moneyball.Core.Interfaces;
+using Moneyball.Core.Interfaces.Repositories;
 
 namespace Moneyball.Infrastructure.Repositories;
 

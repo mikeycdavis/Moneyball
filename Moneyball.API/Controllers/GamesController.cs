@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Moneyball.Core.Entities;
-using Moneyball.Core.Interfaces;
+using Moneyball.Core.Interfaces.Repositories;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Moneyball.API.Controllers;

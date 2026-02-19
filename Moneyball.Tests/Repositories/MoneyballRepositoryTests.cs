@@ -1,7 +1,7 @@
 ﻿using Shouldly;
 using Moneyball.Core.Entities;
-using Moneyball.Core.Interfaces;
 using Moq;
+using Moneyball.Core.Interfaces.Repositories;
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Minimal stub types — replace with your real models / DbContext

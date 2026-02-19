@@ -1,55 +1,77 @@
 ﻿using Microsoft.Extensions.Logging;
+using Moneyball.Core.DTOs;
 using Moneyball.Core.Entities;
 using Moneyball.Core.Enums;
-using Moneyball.Core.Interfaces;
 using Moneyball.Core.Interfaces.ExternalAPIs;
-using Moneyball.Service.ExternalAPIs.DTO;
+using Moneyball.Core.Interfaces.ExternalServices;
+using Moneyball.Core.Interfaces.Repositories;
 
-namespace Moneyball.Infrastructure.ExternalAPIs;
+namespace Moneyball.Infrastructure.ExternalServices;
 
-public class DataIngestionService : IDataIngestionService
+public class DataIngestionService(
+    IMoneyballRepository moneyballRepository,
+    ISportsDataService sportsDataService,
+    IOddsDataService oddsDataService,
+    ILogger<DataIngestionService> logger)
+    : IDataIngestionService
 {
-    private readonly IMoneyballRepository _moneyballRepository;
-    private readonly ISportsDataService _sportsDataService;
-    private readonly IOddsDataService _oddsDataService;
-    private readonly ILogger<DataIngestionService> _logger;
-
-    public DataIngestionService(
-        IMoneyballRepository moneyballRepository,
-        ISportsDataService sportsDataService,
-        IOddsDataService oddsDataService,
-        ILogger<DataIngestionService> logger)
-    {
-        _moneyballRepository = moneyballRepository;
-        _sportsDataService = sportsDataService;
-        _oddsDataService = oddsDataService;
-        _logger = logger;
-    }
-
+    /// <summary>
+    /// Ingests NBA teams from SportRadar API.
+    /// Upserts teams: creates new teams on first run, updates existing teams if data changes.
+    /// </summary>
     public async Task IngestNBATeamsAsync()
     {
-        _logger.LogInformation("Starting NBA teams ingestion");
+        logger.LogInformation("Starting NBA teams ingestion");
 
         try
         {
-            var nbaTeams = await _sportsDataService.GetNBATeamsAsync();
-            var nbaSport = await _moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
+            // Step 1: Get NBA sport entity
+            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
 
             if (nbaSport == null)
             {
-                _logger.LogError("NBA sport not found in database");
+                logger.LogError("NBA sport not found in database. Ensure Sports seed data exists.");
+                throw new InvalidOperationException("NBA sport not found in database. Run database migrations or execute DatabaseSetup.sql to seed Sports table.");
+            }
+
+            // Step 2: Fetch teams from SportRadar API
+            logger.LogInformation("Fetching NBA teams from SportRadar API");
+            var apiTeams = (await sportsDataService.GetNBATeamsAsync()).ToList();
+
+            if (!apiTeams.Any())
+            {
+                logger.LogWarning("No teams returned from SportRadar API. Check API key and network connectivity.");
                 return;
             }
 
+            logger.LogInformation("Received {Count} teams from SportRadar API", apiTeams.Count);
+
+            // Step 3: Process each team (upsert logic)
             var teamsAdded = 0;
             var teamsUpdated = 0;
+            var teamsUnchanged = 0;
 
-            foreach (var apiTeam in nbaTeams)
+            foreach (var apiTeam in apiTeams)
             {
-                var existingTeam = await _moneyballRepository.Teams.GetByExternalIdAsync(apiTeam.Id, nbaSport.SportId);
+                // Validate API data
+                if (string.IsNullOrWhiteSpace(apiTeam.Id))
+                {
+                    logger.LogWarning("Skipping team with missing ID: {Name}", apiTeam.Name);
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(apiTeam.Name))
+                {
+                    logger.LogWarning("Skipping team with missing Name. ID: {Id}", apiTeam.Id);
+                    continue;
+                }
+
+                // Check if team already exists
+                var existingTeam = await moneyballRepository.Teams.GetByExternalIdAsync(apiTeam.Id, nbaSport.SportId);
 
                 if (existingTeam == null)
                 {
+                    // CREATE: Team doesn't exist, create new
                     var newTeam = new Team
                     {
                         SportId = nbaSport.SportId,
@@ -59,65 +81,95 @@ public class DataIngestionService : IDataIngestionService
                         City = apiTeam.Market
                     };
 
-                    await _moneyballRepository.Teams.AddAsync(newTeam);
+                    await moneyballRepository.Teams.AddAsync(newTeam);
                     teamsAdded++;
+
+                    logger.LogDebug("Creating new team: {Name} ({Alias}) - {City}",
+                        apiTeam.Name, apiTeam.Alias, apiTeam.Market);
                 }
                 else
                 {
-                    // Update team info if changed
-                    var updated = false;
+                    // UPDATE: Team exists, check if any fields changed
+                    var hasChanges = false;
 
                     if (existingTeam.Name != apiTeam.Name)
                     {
+                        logger.LogInformation("Team name changed: '{OldName}' → '{NewName}' (ID: {ExternalId})",
+                            existingTeam.Name, apiTeam.Name, apiTeam.Id);
                         existingTeam.Name = apiTeam.Name;
-                        updated = true;
+                        hasChanges = true;
                     }
 
                     if (existingTeam.Abbreviation != apiTeam.Alias)
                     {
+                        logger.LogInformation("Team abbreviation changed: '{OldAbbr}' → '{NewAbbr}' for {Name}",
+                            existingTeam.Abbreviation, apiTeam.Alias, existingTeam.Name);
                         existingTeam.Abbreviation = apiTeam.Alias;
-                        updated = true;
+                        hasChanges = true;
                     }
 
                     if (existingTeam.City != apiTeam.Market)
                     {
+                        logger.LogInformation("Team city changed: '{OldCity}' → '{NewCity}' for {Name}",
+                            existingTeam.City, apiTeam.Market, existingTeam.Name);
                         existingTeam.City = apiTeam.Market;
-                        updated = true;
+                        hasChanges = true;
                     }
 
-                    if (updated)
+                    if (hasChanges)
                     {
-                        await _moneyballRepository.Teams.UpdateAsync(existingTeam);
+                        await moneyballRepository.Teams.UpdateAsync(existingTeam);
                         teamsUpdated++;
+                    }
+                    else
+                    {
+                        teamsUnchanged++;
                     }
                 }
             }
 
-            await _moneyballRepository.SaveChangesAsync();
+            // Step 4: Save all changes in a single transaction
+            var changeCount = await moneyballRepository.SaveChangesAsync();
 
-            _logger.LogInformation("NBA teams ingestion complete. Added: {Added}, Updated: {Updated}",
-                teamsAdded, teamsUpdated);
+            // Step 5: Log final counts (acceptance criteria: count logged)
+            logger.LogInformation(
+                "NBA teams ingestion complete. Added: {Added}, Updated: {Updated}, Unchanged: {Unchanged}, Changed: {Changed}, Total processed: {Total}",
+                teamsAdded, teamsUpdated, teamsUnchanged, changeCount, apiTeams.Count);
+
+            // Validate acceptance criteria: 30 teams expected
+            var totalTeamsInDb = await moneyballRepository.Teams.CountAsync(t => t.SportId == nbaSport.SportId);
+
+            if (totalTeamsInDb != 30)
+            {
+                logger.LogWarning(
+                    "Expected 30 NBA teams in database but found {Count}. Verify SportRadar API response.",
+                    totalTeamsInDb);
+            }
+            else
+            {
+                logger.LogInformation("Verified: 30 NBA teams present in database");
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during NBA teams ingestion");
+            logger.LogError(ex, "Error during NBA teams ingestion");
             throw;
         }
     }
 
     public async Task IngestNBAScheduleAsync(DateTime startDate, DateTime endDate)
     {
-        _logger.LogInformation("Starting NBA schedule ingestion from {StartDate} to {EndDate}",
+        logger.LogInformation("Starting NBA schedule ingestion from {StartDate} to {EndDate}",
             startDate, endDate);
 
         try
         {
-            var games = await _sportsDataService.GetNBAScheduleAsync(startDate, endDate);
-            var nbaSport = await _moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
+            var games = await sportsDataService.GetNBAScheduleAsync(startDate, endDate);
+            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
 
             if (nbaSport == null)
             {
-                _logger.LogError("NBA sport not found in database");
+                logger.LogError("NBA sport not found in database");
                 return;
             }
 
@@ -126,17 +178,17 @@ public class DataIngestionService : IDataIngestionService
 
             foreach (var apiGame in games)
             {
-                var existingGame = await _moneyballRepository.Games.GetGameByExternalIdAsync(
+                var existingGame = await moneyballRepository.Games.GetGameByExternalIdAsync(
                     apiGame.Id, nbaSport.SportId);
 
-                var homeTeam = await _moneyballRepository.Teams.GetByExternalIdAsync(
+                var homeTeam = await moneyballRepository.Teams.GetByExternalIdAsync(
                     apiGame.Home.Id, nbaSport.SportId);
-                var awayTeam = await _moneyballRepository.Teams.GetByExternalIdAsync(
+                var awayTeam = await moneyballRepository.Teams.GetByExternalIdAsync(
                     apiGame.Away.Id, nbaSport.SportId);
 
                 if (homeTeam == null || awayTeam == null)
                 {
-                    _logger.LogWarning("Teams not found for game {GameId}. Home: {HomeId}, Away: {AwayId}",
+                    logger.LogWarning("Teams not found for game {GameId}. Home: {HomeId}, Away: {AwayId}",
                         apiGame.Id, apiGame.Home.Id, apiGame.Away.Id);
                     continue;
                 }
@@ -156,7 +208,7 @@ public class DataIngestionService : IDataIngestionService
                         IsComplete = apiGame.Status == "closed"
                     };
 
-                    await _moneyballRepository.Games.AddAsync(newGame);
+                    await moneyballRepository.Games.AddAsync(newGame);
                     gamesAdded++;
                 }
                 else
@@ -191,41 +243,41 @@ public class DataIngestionService : IDataIngestionService
                     if (updated)
                     {
                         existingGame.UpdatedAt = DateTime.UtcNow;
-                        await _moneyballRepository.Games.UpdateAsync(existingGame);
+                        await moneyballRepository.Games.UpdateAsync(existingGame);
                         gamesUpdated++;
                     }
                 }
             }
 
-            await _moneyballRepository.SaveChangesAsync();
+            await moneyballRepository.SaveChangesAsync();
 
-            _logger.LogInformation("NBA schedule ingestion complete. Added: {Added}, Updated: {Updated}",
+            logger.LogInformation("NBA schedule ingestion complete. Added: {Added}, Updated: {Updated}",
                 gamesAdded, gamesUpdated);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during NBA schedule ingestion");
+            logger.LogError(ex, "Error during NBA schedule ingestion");
             throw;
         }
     }
 
     public async Task IngestNBAGameStatisticsAsync(string externalGameId)
     {
-        _logger.LogInformation("Ingesting statistics for game {GameId}", externalGameId);
+        logger.LogInformation("Ingesting statistics for game {GameId}", externalGameId);
 
         try
         {
-            var nbaSport = await _moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
+            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
             if (nbaSport == null) return;
 
-            var game = await _moneyballRepository.Games.GetGameByExternalIdAsync(externalGameId, nbaSport.SportId);
+            var game = await moneyballRepository.Games.GetGameByExternalIdAsync(externalGameId, nbaSport.SportId);
             if (game == null)
             {
-                _logger.LogWarning("Game {GameId} not found in database", externalGameId);
+                logger.LogWarning("Game {GameId} not found in database", externalGameId);
                 return;
             }
 
-            var statistics = await _sportsDataService.GetNBAGameStatisticsAsync(externalGameId);
+            var statistics = await sportsDataService.GetNBAGameStatisticsAsync(externalGameId);
             if (statistics == null) return;
 
             // Process home team statistics
@@ -234,20 +286,20 @@ public class DataIngestionService : IDataIngestionService
             // Process away team statistics
             await UpsertTeamStatistics(game.GameId, game.AwayTeamId, false, statistics.Away.Statistics);
 
-            await _moneyballRepository.SaveChangesAsync();
+            await moneyballRepository.SaveChangesAsync();
 
-            _logger.LogInformation("Statistics ingested for game {GameId}", externalGameId);
+            logger.LogInformation("Statistics ingested for game {GameId}", externalGameId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error ingesting statistics for game {GameId}", externalGameId);
+            logger.LogError(ex, "Error ingesting statistics for game {GameId}", externalGameId);
             throw;
         }
     }
 
     public async Task IngestOddsAsync(string sport)
     {
-        _logger.LogInformation("Starting odds ingestion for {Sport}", sport);
+        logger.LogInformation("Starting odds ingestion for {Sport}", sport);
 
         try
         {
@@ -259,21 +311,21 @@ public class DataIngestionService : IDataIngestionService
                 _ => throw new ArgumentException($"Unsupported sport: {sport}")
             };
 
-            var sportEntity = await _moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == sportName);
+            var sportEntity = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == sportName);
             if (sportEntity == null)
             {
-                _logger.LogError("Sport {SportName} not found", sportName);
+                logger.LogError("Sport {SportName} not found", sportName);
                 return;
             }
 
-            var oddsResponse = await _oddsDataService.GetOddsAsync(sport);
+            var oddsResponse = await oddsDataService.GetOddsAsync(sport);
             var oddsAdded = 0;
 
             foreach (var oddsGame in oddsResponse.Data)
             {
                 // Find matching game by date and teams
                 var gameDate = oddsGame.CommenceTime;
-                var games = await _moneyballRepository.Games.GetGamesByDateRangeAsync(
+                var games = await moneyballRepository.Games.GetGamesByDateRangeAsync(
                     gameDate.AddHours(-2), gameDate.AddHours(2), sportEntity.SportId);
 
                 var matchingGame = games.FirstOrDefault(g =>
@@ -284,7 +336,7 @@ public class DataIngestionService : IDataIngestionService
 
                 if (matchingGame == null)
                 {
-                    _logger.LogDebug("No matching game found for odds: {Home} vs {Away} at {Date}",
+                    logger.LogDebug("No matching game found for odds: {Home} vs {Away} at {Date}",
                         oddsGame.HomeTeam, oddsGame.AwayTeam, oddsGame.CommenceTime);
                     continue;
                 }
@@ -292,7 +344,7 @@ public class DataIngestionService : IDataIngestionService
                 // Process each bookmaker
                 foreach (var bookmaker in oddsGame.Bookmakers)
                 {
-                    var gameOdds = new Core.Entities.Odds
+                    var gameOdds = new Odds
                     {
                         GameId = matchingGame.GameId,
                         BookmakerName = bookmaker.Title,
@@ -342,44 +394,44 @@ public class DataIngestionService : IDataIngestionService
                         }
                     }
 
-                    await _moneyballRepository.Odds.AddAsync(gameOdds);
+                    await moneyballRepository.Odds.AddAsync(gameOdds);
                     oddsAdded++;
                 }
             }
 
-            await _moneyballRepository.SaveChangesAsync();
+            await moneyballRepository.SaveChangesAsync();
 
-            _logger.LogInformation("Odds ingestion complete. Added {Count} odds records", oddsAdded);
+            logger.LogInformation("Odds ingestion complete. Added {Count} odds records", oddsAdded);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during odds ingestion for {Sport}", sport);
+            logger.LogError(ex, "Error during odds ingestion for {Sport}", sport);
             throw;
         }
     }
 
     public async Task UpdateGameResultsAsync(int sportId)
     {
-        _logger.LogInformation("Updating game results for sport {SportId}", sportId);
+        logger.LogInformation("Updating game results for sport {SportId}", sportId);
 
         try
         {
             // Get recent games that might have finished
-            var recentGames = await _moneyballRepository.Games.GetGamesByDateRangeAsync(
+            var recentGames = await moneyballRepository.Games.GetGamesByDateRangeAsync(
                 DateTime.UtcNow.AddDays(-2), DateTime.UtcNow, sportId);
 
             var incompleteGames = recentGames.Where(g => !g.IsComplete).ToList();
 
-            _logger.LogInformation("Found {Count} incomplete games to check", incompleteGames.Count);
+            logger.LogInformation("Found {Count} incomplete games to check", incompleteGames.Count);
 
             // This would call the sports data service to get updated scores
             // Implementation depends on the specific sport API
 
-            await _moneyballRepository.SaveChangesAsync();
+            await moneyballRepository.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating game results");
+            logger.LogError(ex, "Error updating game results");
             throw;
         }
     }
@@ -387,7 +439,7 @@ public class DataIngestionService : IDataIngestionService
     private async Task UpsertTeamStatistics(int gameId, int teamId, bool isHomeTeam,
         NBAStatistics stats)
     {
-        var existing = await _moneyballRepository.TeamStatistics.FirstOrDefaultAsync(
+        var existing = await moneyballRepository.TeamStatistics.FirstOrDefaultAsync(
             ts => ts.GameId == gameId && ts.TeamId == teamId);
 
         if (existing == null)
@@ -417,7 +469,7 @@ public class DataIngestionService : IDataIngestionService
                 PersonalFouls = stats.PersonalFouls
             };
 
-            await _moneyballRepository.TeamStatistics.AddAsync(teamStats);
+            await moneyballRepository.TeamStatistics.AddAsync(teamStats);
         }
         else
         {
@@ -441,7 +493,7 @@ public class DataIngestionService : IDataIngestionService
             existing.Turnovers = stats.Turnovers;
             existing.PersonalFouls = stats.PersonalFouls;
 
-            await _moneyballRepository.TeamStatistics.UpdateAsync(existing);
+            await moneyballRepository.TeamStatistics.UpdateAsync(existing);
         }
     }
 

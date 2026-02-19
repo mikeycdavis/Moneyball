@@ -6,7 +6,7 @@ using Moneyball.Infrastructure.ExternalAPIs.Odds;
 using Moneyball.Infrastructure.ExternalAPIs.SportsRadar;
 using RichardSzalay.MockHttp;
 
-namespace Moneyball.Tests.HttpClients.TestInfrastructure;
+namespace Moneyball.Tests.ExternalAPIs.HttpClients.TestInfrastructure;
 
 /// <summary>
 /// Builds a ServiceProvider that wires the real service implementations

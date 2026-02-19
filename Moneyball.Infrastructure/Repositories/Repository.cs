@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
-using Moneyball.Core.Interfaces;
+using Moneyball.Core.Interfaces.Repositories;
 
 namespace Moneyball.Infrastructure.Repositories;
 

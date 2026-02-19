@@ -1,6 +1,6 @@
 ﻿using Moneyball.Core.Entities;
 
-namespace Moneyball.Core.Interfaces
+namespace Moneyball.Core.Interfaces.Repositories
 {
     public interface IPredictionRepository : IRepository<Prediction>
     {

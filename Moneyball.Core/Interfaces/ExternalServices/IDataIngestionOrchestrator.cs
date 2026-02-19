@@ -1,4 +1,4 @@
-﻿namespace Moneyball.Core.Interfaces.ExternalAPIs
+﻿namespace Moneyball.Core.Interfaces.ExternalServices
 {
     public interface IDataIngestionOrchestrator
     {

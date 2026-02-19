@@ -1,4 +1,4 @@
-﻿using Moneyball.Service.ExternalAPIs.DTO;
+﻿using Moneyball.Core.DTOs;
 
 namespace Moneyball.Core.Interfaces.ExternalAPIs
 {

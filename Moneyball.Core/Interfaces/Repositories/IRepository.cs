@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace Moneyball.Core.Interfaces
+namespace Moneyball.Core.Interfaces.Repositories
 {
     public interface IRepository<T> where T : class
     {
