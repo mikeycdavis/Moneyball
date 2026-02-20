@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Moneyball.Core.DTOs;
 using Moneyball.Core.Interfaces.ExternalAPIs;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Moneyball.Core.DTOs;
 
 namespace Moneyball.Infrastructure.ExternalAPIs.SportsRadar;
 
@@ -50,7 +50,7 @@ public class SportsDataService : ISportsDataService
 
                     if (string.IsNullOrWhiteSpace(jsonResponse))
                     {
-                        _logger.LogWarning("Failed to fetch schedule for {Date}. API returned empty content.",date);
+                        _logger.LogWarning("Failed to fetch schedule for {Date}. API returned empty content.", date);
                     }
                     else
                     {
