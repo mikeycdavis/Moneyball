@@ -76,6 +76,25 @@ jobs:
             exit 1
           fi
 
+      - name: Generate Coverage Badge
+        uses: emibcn/badge-action@v2
+        with:
+          label: coverage
+          status: ${{ steps.coverage.outputs.coverage }}%
+          color: >-
+            ${{
+              steps.coverage.outputs.coverage >= 80 && 'brightgreen' ||
+              steps.coverage.outputs.coverage >= 70 && 'yellow' ||
+              'red'
+            }}
+          path: badges/coverage.svg
+
+      - name: Commit Badge
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: badges/coverage.svg
+          message: "chore: update coverage badge"
+
       - name: Upload Coverage Artifact
         uses: actions/upload-artifact@v4
         with:
