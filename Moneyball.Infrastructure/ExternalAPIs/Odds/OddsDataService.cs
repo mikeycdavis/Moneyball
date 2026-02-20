@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Moneyball.Core.DTOs.ExternalAPIs.Odds;
 using Moneyball.Core.Interfaces.ExternalAPIs;
 using System.Text.Json;
-using Moneyball.Core.DTOs;
 
 namespace Moneyball.Infrastructure.ExternalAPIs.Odds;
 

@@ -6,7 +6,8 @@ using Moq.Protected;
 using Shouldly;
 using System.Net;
 using System.Text.Json;
-using Moneyball.Core.DTOs;
+using Moneyball.Core.DTOs.ExternalAPIs;
+using Moneyball.Core.DTOs.ExternalAPIs.SportsRadar;
 
 namespace Moneyball.Tests.ExternalAPIs.SportsRadar;
 

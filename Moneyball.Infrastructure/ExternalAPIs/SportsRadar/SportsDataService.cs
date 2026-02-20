@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Moneyball.Core.DTOs;
+using Moneyball.Core.DTOs.ExternalAPIs.SportsRadar;
 using Moneyball.Core.Interfaces.ExternalAPIs;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -152,24 +152,4 @@ public class SportsDataService : ISportsDataService
             throw;
         }
     }
-}
-
-// Additional DTO for hierarchy response
-public class NBAHierarchyResponse
-{
-    public List<NBAConference> Conferences { get; set; } = [];
-}
-
-public class NBAConference
-{
-    public string Id { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public List<NBADivision> Divisions { get; set; } = [];
-}
-
-public class NBADivision
-{
-    public string Id { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public List<NBATeamInfo> Teams { get; set; } = [];
 }

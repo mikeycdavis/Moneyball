@@ -1,6 +1,6 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.Logging;
-using Moneyball.Core.DTOs;
+using Moneyball.Core.DTOs.ExternalAPIs.SportsRadar;
 using Moneyball.Core.Entities;
 using Moneyball.Core.Enums;
 using Moneyball.Core.Interfaces.ExternalAPIs;

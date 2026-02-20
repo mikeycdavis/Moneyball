@@ -1,4 +1,4 @@
-﻿using Moneyball.Core.DTOs;
+﻿using Moneyball.Core.DTOs.ExternalAPIs.SportsRadar;
 
 namespace Moneyball.Core.Interfaces.ExternalAPIs
 {

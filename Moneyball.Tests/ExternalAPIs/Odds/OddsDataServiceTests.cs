@@ -7,7 +7,7 @@ using Shouldly;
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using Moneyball.Core.DTOs;
+using Moneyball.Core.DTOs.ExternalAPIs.Odds;
 
 namespace Moneyball.Tests.ExternalAPIs.Odds;
 
