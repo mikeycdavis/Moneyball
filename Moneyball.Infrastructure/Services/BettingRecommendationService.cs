@@ -1,13 +1,12 @@
-﻿using Moneyball.Core.Interfaces.Repositories;
-//using Moneyball.Infrastructure.ML;
+﻿//using Moneyball.Infrastructure.ML;
 
 namespace Moneyball.Infrastructure.Services
 {
     public class BettingRecommendationService
     {
-        private readonly IGameRepository _gameRepository;
-        private readonly IPredictionRepository _predictionRepository;
-        private readonly IOddsRepository _oddsRepository;
+        //private readonly IGameRepository _gameRepository;
+        //private readonly IPredictionRepository _predictionRepository;
+        //private readonly IOddsRepository _oddsRepository;
         //private readonly KellyCriterionCalculator _kellyCalculator;
 
         //public async Task<BettingRecommendationResponse> GetRecommendationsAsync(

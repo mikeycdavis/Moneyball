@@ -398,6 +398,126 @@ public class DataIngestionService(
         }
     }
 
+    /// <summary>
+    /// Ingests betting odds from SportRadar Odds Comparison API for a specific game.
+    /// Creates one Odds row per bookmaker.
+    /// </summary>
+    /// <param name="externalGameId">SportRadar game ID</param>
+    public async Task IngestNBAOddsAsync(string externalGameId)
+    {
+        logger.LogInformation("Starting SportRadar odds ingestion for game {GameId}", externalGameId);
+
+        try
+        {
+            // Step 1: Validate input
+            if (string.IsNullOrWhiteSpace(externalGameId))
+            {
+                logger.LogWarning("ExternalGameId is null or empty. Cannot fetch odds.");
+                throw new ArgumentException("ExternalGameId cannot be null or empty", nameof(externalGameId));
+            }
+
+            // Step 2: Verify game exists in database
+            var game = await moneyballRepository.Games.FirstOrDefaultAsync(g => g.ExternalGameId == externalGameId);
+
+            if (game == null)
+            {
+                logger.LogWarning("Game {GameId} not found in database. Run schedule ingestion first.", externalGameId);
+                throw new InvalidOperationException($"Game {externalGameId} not found in database. Run IngestNBAScheduleAsync first to create the game.");
+            }
+
+            // Step 3: Fetch odds from SportRadar API
+            logger.LogInformation("Fetching odds for game {GameId} from SportRadar API", externalGameId);
+            var oddsResponse = await sportsDataService.GetNBAOddsAsync(externalGameId);
+
+            if (oddsResponse == null || !oddsResponse.Markets.Any())
+            {
+                logger.LogInformation("No odds data returned for game {GameId}. Odds may not be available yet.", externalGameId);
+                return;
+            }
+
+            // Step 4: Process odds for each bookmaker
+            // Group markets by bookmaker to create one Odds row per bookmaker
+            var bookmakerOddsMap = new Dictionary<string, Odds>();
+
+            foreach (var market in oddsResponse.Markets)
+            {
+                foreach (var bookmaker in market.Bookmakers)
+                {
+                    // Get or create Odds entry for this bookmaker
+                    if (!bookmakerOddsMap.ContainsKey(bookmaker.Name))
+                    {
+                        bookmakerOddsMap[bookmaker.Name] = new Odds
+                        {
+                            GameId = game.GameId,
+                            BookmakerName = bookmaker.Name,
+                            RecordedAt = DateTime.UtcNow
+                        };
+                    }
+
+                    var odds = bookmakerOddsMap[bookmaker.Name];
+
+                    // Map odds based on market type
+                    switch (market.Name.ToLower())
+                    {
+                        case "1x2": // Moneyline market
+                        case "moneyline":
+                            MapMoneylineOdds(bookmaker, odds);
+                            break;
+
+                        case "pointspread":
+                        case "spread":
+                        case "handicap":
+                            MapSpreadOdds(bookmaker, odds);
+                            break;
+
+                        case "totals":
+                        case "total":
+                        case "over/under":
+                            MapTotalOdds(bookmaker, odds);
+                            break;
+
+                        default:
+                            logger.LogDebug("Skipping unknown market type: {MarketName}", market.Name);
+                            break;
+                    }
+                }
+            }
+
+            // Step 5: Save all odds in a single transaction
+            var oddsAdded = 0;
+            foreach (var odds in bookmakerOddsMap.Values)
+            {
+                await moneyballRepository.Odds.AddAsync(odds);
+                oddsAdded++;
+
+                logger.LogDebug(
+                    "Added odds from {Bookmaker} for game {GameId}: ML(H:{HomeML}/A:{AwayML}), Spread(H:{HomeSpread}@{HomeSpreadOdds}/A:{AwaySpread}@{AwaySpreadOdds}), Total:{OverUnder}(O:{OverOdds}/U:{UnderOdds})",
+                    odds.BookmakerName, game.GameId,
+                    odds.HomeMoneyline, odds.AwayMoneyline,
+                    odds.HomeSpread, odds.HomeSpreadOdds,
+                    odds.AwaySpread, odds.AwaySpreadOdds,
+                    odds.OverUnder, odds.OverOdds, odds.UnderOdds);
+            }
+
+            var changeCount = await moneyballRepository.SaveChangesAsync();
+
+            logger.LogInformation(
+                "SportRadar odds ingestion complete for game {GameId}. Added: {Added} bookmaker odds. Changes saved: {ChangeCount}",
+                externalGameId, oddsAdded, changeCount);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error during SportRadar odds ingestion for game {GameId}", externalGameId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Ingests betting odds from The Odds API for a specific sport.
+    /// </summary>
+    /// <param name="sport"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
     public async Task IngestOddsAsync(string sport)
     {
         logger.LogInformation("Starting odds ingestion for {Sport}", sport);
@@ -445,7 +565,7 @@ public class DataIngestionService(
                 // Process each bookmaker
                 foreach (var bookmaker in oddsGame.Bookmakers)
                 {
-                    var gameOdds = new Odds
+                    var odds = new Odds
                     {
                         GameId = matchingGame.GameId,
                         BookmakerName = bookmaker.Title,
@@ -460,8 +580,8 @@ public class DataIngestionService(
                             case "h2h": // Moneyline
                                 var homeML = market.Outcomes.FirstOrDefault(o => o.Name == oddsGame.HomeTeam);
                                 var awayML = market.Outcomes.FirstOrDefault(o => o.Name == oddsGame.AwayTeam);
-                                if (homeML != null) gameOdds.HomeMoneyline = homeML.Price;
-                                if (awayML != null) gameOdds.AwayMoneyline = awayML.Price;
+                                if (homeML != null) odds.HomeMoneyline = homeML.Price;
+                                if (awayML != null) odds.AwayMoneyline = awayML.Price;
                                 break;
 
                             case "spreads":
@@ -469,13 +589,13 @@ public class DataIngestionService(
                                 var awaySpread = market.Outcomes.FirstOrDefault(o => o.Name == oddsGame.AwayTeam);
                                 if (homeSpread != null)
                                 {
-                                    gameOdds.HomeSpread = homeSpread.Point;
-                                    gameOdds.HomeSpreadOdds = homeSpread.Price;
+                                    odds.HomeSpread = homeSpread.Point;
+                                    odds.HomeSpreadOdds = homeSpread.Price;
                                 }
                                 if (awaySpread != null)
                                 {
-                                    gameOdds.AwaySpread = awaySpread.Point;
-                                    gameOdds.AwaySpreadOdds = awaySpread.Price;
+                                    odds.AwaySpread = awaySpread.Point;
+                                    odds.AwaySpreadOdds = awaySpread.Price;
                                 }
                                 break;
 
@@ -484,18 +604,18 @@ public class DataIngestionService(
                                 var under = market.Outcomes.FirstOrDefault(o => o.Name == "Under");
                                 if (over != null)
                                 {
-                                    gameOdds.OverUnder = over.Point;
-                                    gameOdds.OverOdds = over.Price;
+                                    odds.OverUnder = over.Point;
+                                    odds.OverOdds = over.Price;
                                 }
                                 if (under != null)
                                 {
-                                    gameOdds.UnderOdds = under.Price;
+                                    odds.UnderOdds = under.Price;
                                 }
                                 break;
                         }
                     }
 
-                    await moneyballRepository.Odds.AddAsync(gameOdds);
+                    await moneyballRepository.Odds.AddAsync(odds);
                     oddsAdded++;
                 }
             }
@@ -668,5 +788,79 @@ public class DataIngestionService(
     {
         var status = apiStatus.ToLower();
         return status == "closed" || status == "complete" || status == "final";
+    }
+
+    /// <summary>
+    /// Maps moneyline odds from SportRadar format to Odds.
+    /// SportRadar uses "1" for home and "2" for away in outcome types.
+    /// </summary>
+    private static void MapMoneylineOdds(NBABookmaker bookmaker, Odds odds)
+    {
+        // Type "1" = Home, Type "2" = Away
+        var homeOutcome = bookmaker.Outcomes.FirstOrDefault(o => o.Type == "1");
+        var awayOutcome = bookmaker.Outcomes.FirstOrDefault(o => o.Type == "2");
+
+        if (homeOutcome != null)
+        {
+            // SportRadar odds are already in American format (e.g., -110, +150)
+            odds.HomeMoneyline = homeOutcome.Odds;
+        }
+
+        if (awayOutcome != null)
+        {
+            odds.AwayMoneyline = awayOutcome.Odds;
+        }
+    }
+
+    /// <summary>
+    /// Maps spread odds from SportRadar format to Odds.
+    /// Extracts spread line and odds for both home and away.
+    /// </summary>
+    private static void MapSpreadOdds(NBABookmaker bookmaker, Odds odds)
+    {
+        // Type "1" = Home, Type "2" = Away
+        var homeOutcome = bookmaker.Outcomes.FirstOrDefault(o => o.Type == "1");
+        var awayOutcome = bookmaker.Outcomes.FirstOrDefault(o => o.Type == "2");
+
+        if (homeOutcome != null)
+        {
+            // Line is the spread (e.g., -3.5)
+            odds.HomeSpread = homeOutcome.Line;
+            // Odds are the price on that spread (e.g., -110)
+            odds.HomeSpreadOdds = homeOutcome.Odds;
+        }
+
+        if (awayOutcome != null)
+        {
+            odds.AwaySpread = awayOutcome.Line;
+            odds.AwaySpreadOdds = awayOutcome.Odds;
+        }
+    }
+
+    /// <summary>
+    /// Maps total (over/under) odds from SportRadar format to Odds.
+    /// Extracts the total line and odds for both over and under.
+    /// </summary>
+    private static void MapTotalOdds(NBABookmaker bookmaker, Odds odds)
+    {
+        // Type "over" and "under"
+        var overOutcome = bookmaker.Outcomes.FirstOrDefault(o =>
+            o.Type.Equals("over", StringComparison.OrdinalIgnoreCase));
+        var underOutcome = bookmaker.Outcomes.FirstOrDefault(o =>
+            o.Type.Equals("under", StringComparison.OrdinalIgnoreCase));
+
+        if (overOutcome != null)
+        {
+            // Line is the total (e.g., 220.5)
+            odds.OverUnder = overOutcome.Line;
+            // Odds are the price on the over (e.g., -110)
+            odds.OverOdds = overOutcome.Odds;
+        }
+
+        if (underOutcome != null)
+        {
+            // Under odds (e.g., -110)
+            odds.UnderOdds = underOutcome.Odds;
+        }
     }
 }

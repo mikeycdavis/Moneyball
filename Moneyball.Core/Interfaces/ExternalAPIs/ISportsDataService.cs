@@ -7,5 +7,6 @@ namespace Moneyball.Core.Interfaces.ExternalAPIs
         Task<IEnumerable<NBAGame>> GetNBAScheduleAsync(DateTime startDate, DateTime endDate);
         Task<NBAGameStatistics?> GetNBAGameStatisticsAsync(string gameId);
         Task<IEnumerable<NBATeamInfo>> GetNBATeamsAsync();
+        Task<NBAOddsResponse?> GetNBAOddsAsync(string gameId);
     }
 }
