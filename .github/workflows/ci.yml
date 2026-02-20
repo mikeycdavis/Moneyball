@@ -65,7 +65,7 @@ jobs:
           reportgenerator \
             -reports:**/coverage.cobertura.xml \
             -targetdir:coverage-report \
-            -reporttypes:HtmlInline_AzurePipelines;Cobertura;TextSummary
+            -reporttypes:"HtmlInline_AzurePipelines;Cobertura;TextSummary"
 
       - name: Show Coverage Summary
         run: cat coverage-report/Summary.txt
