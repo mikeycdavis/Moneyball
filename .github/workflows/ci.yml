@@ -100,14 +100,25 @@ jobs:
               steps.coverage.outputs.coverage >= 70 && 'yellow' ||
               'red'
             }}
-          path: >-
-            badges/coverage-${{ github.ref_name }}.svg
+          path: >- 
+            ${{
+              github.ref == 'refs/heads/master' && 'badges/coverage-master.svg' || 
+              github.ref == 'refs/heads/develop' && 'badges/coverage-develop.svg'
+            }}
 
       - name: Commit Badge
         uses: EndBug/add-and-commit@v9
         with:
-          add: badges/coverage-${{ github.ref_name }}.svg
-          message: "chore: update coverage badge for ${{ github.ref_name }}"
+          add: >-
+            ${{
+              github.ref == 'refs/heads/master' && 'badges/coverage-master.svg' || 
+              github.ref == 'refs/heads/develop' && 'badges/coverage-develop.svg'
+            }}
+          message: >-
+            ${{
+              github.ref == 'refs/heads/master' && 'chore: update coverage badge for master' || 
+              github.ref == 'refs/heads/develop' && 'chore: update coverage badge for develop'
+            }}
           push: true
           default_author: github_actor
           pathspec_error_handling: ignore
