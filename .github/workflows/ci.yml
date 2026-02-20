@@ -38,6 +38,46 @@ jobs:
       - name: Build solution
         run: dotnet build Moneyball.slnx --configuration Release --no-restore
 
-      # Optional — remove if no test projects exist
-      - name: Run tests
-        run: dotnet test Moneyball.slnx --configuration Release --no-build --verbosity normal
+      - name: Run tests with coverage
+        run: |
+          dotnet test Moneyball.Tests/Moneyball.Tests.csproj \
+            --configuration Release \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --logger "trx;LogFileName=test-results.trx"
+
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Moneyball Unit Tests
+          path: "**/test-results.trx"
+          reporter: dotnet-trx
+
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+      - name: Generate Coverage Report
+        run: |
+          reportgenerator \
+            -reports:**/coverage.cobertura.xml \
+            -targetdir:coverage-report \
+            -reporttypes:HtmlInline_AzurePipelines;Cobertura;TextSummary
+
+      - name: Show Coverage Summary
+        run: cat coverage-report/Summary.txt
+
+      - name: Enforce Coverage Threshold
+        run: |
+          COVERAGE=$(grep -oP 'Line coverage:\s+\K[0-9.]+' coverage-report/Summary.txt | cut -d'.' -f1)
+          echo "Line Coverage: $COVERAGE%"
+          if [ "$COVERAGE" -lt "$COVERAGE_THRESHOLD" ]; then
+            echo "Coverage is below threshold ($COVERAGE_THRESHOLD%)"
+            exit 1
+          fi
+
+      - name: Upload Coverage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-report
