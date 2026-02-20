@@ -883,9 +883,8 @@ public class SportsDataService_GetNBAOddsAsyncTests
             .ThrowsAsync(new InvalidOperationException("Unexpected error"));
 
         // Act & Assert
-        var act = async () => await _service.GetNBAOddsAsync("sr:match:12345678");
-
-        await act.Should().ThrowAsync<InvalidOperationException>()
+        await FluentActions.Awaiting(async () => await _service.GetNBAOddsAsync("sr:match:12345678"))
+            .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Unexpected error");
 
         // Verify error was logged with game ID context
