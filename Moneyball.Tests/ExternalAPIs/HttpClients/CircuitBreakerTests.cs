@@ -30,6 +30,9 @@ public class CircuitBreakerTests
         for (var i = 0; i < ResiliencePolicies.BreakerThreshold; i++)
         {
             try { await service.GetNBATeamsAsync(); } catch { /* expected during warm-up */ }
+
+            // Delay between attempts - important for circuit breaker state transitions
+            await Task.Delay(200, TestContext.Current.CancellationToken);
         }
 
         // Once open, the breaker throws BrokenCircuitException before
@@ -54,6 +57,9 @@ public class CircuitBreakerTests
         for (var i = 0; i < ResiliencePolicies.BreakerThreshold; i++)
         {
             try { await service.GetOddsAsync($"sport-{i}"); } catch { /* expected */ }
+
+            // Delay between attempts - important for circuit breaker state transitions
+            await Task.Delay(200, TestContext.Current.CancellationToken);
         }
 
         await FluentActions.Awaiting(() => service.GetOddsAsync("basketball_nba"))
@@ -73,6 +79,9 @@ public class CircuitBreakerTests
         for (var i = 0; i < ResiliencePolicies.BreakerThreshold; i++)
         {
             try { await service.GetNBATeamsAsync(); } catch { /* expected */ }
+
+            // Delay between attempts - important for circuit breaker state transitions
+            await Task.Delay(200, TestContext.Current.CancellationToken);
         }
 
         await FluentActions.Awaiting(() => service.GetNBATeamsAsync())
@@ -92,6 +101,9 @@ public class CircuitBreakerTests
         for (var i = 0; i < ResiliencePolicies.BreakerThreshold; i++)
         {
             try { await service.GetOddsAsync($"sport-{i}"); } catch { /* expected */ }
+
+            // Delay between attempts - important for circuit breaker state transitions
+            await Task.Delay(200, TestContext.Current.CancellationToken);
         }
 
         await FluentActions.Awaiting(() => service.GetOddsAsync("basketball_nba"))
@@ -120,6 +132,9 @@ public class CircuitBreakerTests
         for (var i = 0; i < 4; i++)
         {
             try { await service.GetNBATeamsAsync(); } catch { /* expected */ }
+
+            // Delay between attempts - important for circuit breaker state transitions
+            await Task.Delay(200, TestContext.Current.CancellationToken);
         }
 
         // Circuit should still be closed — this call must reach the handler
@@ -148,6 +163,9 @@ public class CircuitBreakerTests
         for (var i = 0; i < 4; i++)
         {
             try { await service.GetOddsAsync($"sport-{i}"); } catch { /* expected */ }
+
+            // Delay between attempts - important for circuit breaker state transitions
+            await Task.Delay(200, TestContext.Current.CancellationToken);
         }
 
         await FluentActions.Awaiting(() => service.GetOddsAsync("basketball_nba"))
