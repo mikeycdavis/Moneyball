@@ -27,7 +27,7 @@ public class DataIngestionOrchestrator(
 
                 // Step 3: Ingest odds
                 logger.LogInformation("Ingesting NBA odds...");
-                await dataIngestionService.IngestOddsAsync("basketball_nba");
+                await dataIngestionService.IngestNBAOddsAsync("basketball_nba");
             }
             else if (sportId == 2) // NFL
             {
@@ -63,7 +63,7 @@ public class DataIngestionOrchestrator(
                             DateTime.UtcNow.Date.AddDays(7));
 
                         logger.LogInformation("Updating NBA odds...");
-                        await dataIngestionService.IngestOddsAsync("basketball_nba");
+                        await dataIngestionService.IngestNBAOddsAsync("basketball_nba");
 
                         logger.LogInformation("Updating NBA game results...");
                         await dataIngestionService.UpdateGameResultsAsync(1);
