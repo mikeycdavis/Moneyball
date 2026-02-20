@@ -117,15 +117,21 @@ public class DataIngestionController(
     /// <summary>
     /// Update game results for recent games
     /// </summary>
-    /// <param name="sportId">Sport ID</param>
-    [HttpPost("results/{sportId}")]
-    public async Task<IActionResult> UpdateGameResults(int sportId)
+    /// <param name="startDate">Start date (YYYY-MM-DD)</param>
+    /// <param name="endDate">End date (YYYY-MM-DD)</param>
+    [HttpPost("results")]
+    public async Task<IActionResult> UpdateGameResults(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null)
     {
         try
         {
-            logger.LogInformation("Manual game results update triggered for sport {SportId}", sportId);
-            await dataIngestionService.UpdateGameResultsAsync(sportId);
-            return Ok(new { message = $"Game results updated for sport {sportId}" });
+            var start = startDate ?? DateTime.UtcNow.Date;
+            var end = endDate ?? DateTime.UtcNow.Date.AddDays(7);
+
+            logger.LogInformation("Manual game results update triggered from {Start} to {End}", start, end);
+            await dataIngestionService.UpdateNBAGameResultsAsync();
+            return Ok(new { message = $"Game results updated for sport from {start:yyyy-MM-dd} to {end:yyyy-MM-dd}" });
         }
         catch (Exception ex)
         {

@@ -66,7 +66,7 @@ public class DataIngestionOrchestrator(
                         await dataIngestionService.IngestNBAOddsAsync("basketball_nba");
 
                         logger.LogInformation("Updating NBA game results...");
-                        await dataIngestionService.UpdateGameResultsAsync(1);
+                        await dataIngestionService.UpdateNBAGameResultsAsync();
                     }
                     catch (Exception ex)
                     {

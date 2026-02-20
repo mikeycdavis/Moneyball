@@ -1853,7 +1853,7 @@ public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
             .ReturnsAsync(nbaSport);
 
         _mockGamesRepo
-            .Setup(r => r.GetGameByExternalIdAsync(game.ExternalGameId!, nbaSport.SportId))
+            .Setup(r => r.GetGameByExternalIdAsync(game.ExternalGameId ?? string.Empty, nbaSport.SportId))
             .ReturnsAsync(game);
     }
 

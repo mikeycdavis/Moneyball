@@ -190,7 +190,7 @@ public class DataIngestionService(
                 return;
             }
 
-            logger.LogInformation("Received {Count} games from SportRadar API", apiGames.Count());
+            logger.LogInformation("Received {Count} games from SportRadar API", apiGames.Count);
 
             // Step 3: Process each game (upsert logic)
             var gamesAdded = 0;
@@ -640,28 +640,166 @@ public class DataIngestionService(
         }
     }
 
-    public async Task UpdateGameResultsAsync(int sportId)
+    /// <summary>
+    /// Updates NBA game results for completed games within the last 48 hours.
+    /// Fetches final scores from SportRadar and updates IsComplete flag and scores.
+    /// Acceptance criteria: Games within last 48 hours checked; IsComplete flipped; 
+    /// HomeScore/AwayScore populated; count logged.
+    /// </summary>
+    public async Task UpdateNBAGameResultsAsync()
     {
-        logger.LogInformation("Updating game results for sport {SportId}", sportId);
+        logger.LogInformation("Starting game results update for completed games");
 
         try
         {
-            // Get recent games that might have finished
-            var recentGames = await moneyballRepository.Games.GetGamesByDateRangeAsync(
-                DateTime.UtcNow.AddDays(-2), DateTime.UtcNow, sportId);
+            // Step 1: Get NBA sport entity
+            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
 
-            var incompleteGames = recentGames.Where(g => !g.IsComplete).ToList();
+            if (nbaSport == null)
+            {
+                logger.LogError("NBA sport not found in database");
+                throw new InvalidOperationException("NBA sport not found in database. Ensure Sports seed data exists.");
+            }
 
-            logger.LogInformation("Found {Count} incomplete games to check", incompleteGames.Count);
+            // Step 2: Get games within last 48 hours (acceptance criteria)
+            var cutoffTime = DateTime.UtcNow.AddHours(-48);
+            var recentGames = (await moneyballRepository.Games.GetGamesByDateRangeAsync(
+                cutoffTime,
+                DateTime.UtcNow.AddHours(1), // Small buffer for games just finishing
+                nbaSport.SportId)).ToList();
 
-            // This would call the sports data service to get updated scores
-            // Implementation depends on the specific sport API
+            if (!recentGames.Any())
+            {
+                logger.LogInformation("No recent games found in the last 48 hours");
+                return;
+            }
 
-            await moneyballRepository.SaveChangesAsync();
+            logger.LogInformation("Found {Count} existing games in the last 48 hours to check", recentGames.Count);
+
+            // Step 2: Fetch schedule from SportRadar API
+            logger.LogInformation("Fetching NBA schedule from SportRadar API");
+            var apiGames = (await sportsDataService.GetNBAScheduleAsync(
+                cutoffTime,
+                DateTime.UtcNow.AddHours(1))).ToList();
+
+            if (!apiGames.Any())
+            {
+                logger.LogInformation("No games returned from SportRadar API for date range {StartDate:yyyy-MM-dd} to {EndDate:yyyy-MM-dd}",
+                    cutoffTime, DateTime.UtcNow.AddHours(1));
+                return;
+            }
+
+            logger.LogInformation("Found {Count} games from SportsRadar in the last 48 hours to check", apiGames.Count);
+
+            var gamesUpdated = 0;
+            var gamesCompleted = 0;
+            var gamesSkipped = 0;
+
+            // Step 3: Process each game
+            foreach (var game in recentGames)
+            {
+                try
+                {
+                    // Skip games that are already marked as complete
+                    // (This is an optimization - we could still update them, but typically final scores don't change)
+                    if (game.IsComplete)
+                    {
+                        gamesSkipped++;
+                        continue;
+                    }
+
+                    var nbaGame = apiGames.FirstOrDefault(g => g.Id == game.ExternalGameId);
+
+                    if (nbaGame == null)
+                    {
+                        gamesSkipped++;
+                        continue;
+                    }
+
+                    // Step 4: Check if game is complete and update scores
+                    var hasChanges = false;
+
+                    // Update home score (acceptance criteria: HomeScore populated)
+                    var homePoints = nbaGame.HomePoints;
+                    if (game.HomeScore != homePoints)
+                    {
+                        logger.LogDebug(
+                            "Updating home score for game {ExternalGameId}: {OldScore} → {NewScore}",
+                            game.ExternalGameId, game.HomeScore, homePoints);
+                        game.HomeScore = homePoints;
+                        hasChanges = true;
+                    }
+
+                    // Update away score (acceptance criteria: AwayScore populated)
+                    var awayPoints = nbaGame.AwayPoints;
+                    if (game.AwayScore != awayPoints)
+                    {
+                        logger.LogDebug(
+                            "Updating away score for game {ExternalGameId}: {OldScore} → {NewScore}",
+                            game.ExternalGameId, game.AwayScore, awayPoints);
+                        game.AwayScore = awayPoints;
+                        hasChanges = true;
+                    }
+
+                    // Determine if game is complete based on status
+                    // SportRadar statuses: "scheduled", "inprogress", "halftime", "closed", "complete"
+                    var isGameComplete = IsGameComplete(nbaGame.Status);
+
+                    // Flip IsComplete flag (acceptance criteria: IsComplete flipped)
+                    if (!game.IsComplete && isGameComplete)
+                    {
+                        logger.LogInformation(
+                            "Marking game {ExternalGameId} as complete. Final score: {Home} {HomeScore} - {Away} {AwayScore}",
+                            game.ExternalGameId,
+                            nbaGame.Home.Name,
+                            game.HomeScore,
+                            nbaGame.Away.Name,
+                            game.AwayScore);
+
+                        game.IsComplete = true;
+                        game.Status = GameStatus.Final;
+                        gamesCompleted++;
+                        hasChanges = true;
+                    }
+                    else if (game.Status != MapGameStatus(nbaGame.Status))
+                    {
+                        // Update status even if not complete (e.g., scheduled → in progress)
+                        game.Status = MapGameStatus(nbaGame.Status);
+                        hasChanges = true;
+                    }
+
+                    // Save changes if any updates were made
+                    if (hasChanges)
+                    {
+                        game.UpdatedAt = DateTime.UtcNow;
+                        await moneyballRepository.Games.UpdateAsync(game);
+                        gamesUpdated++;
+                    }
+                    else
+                    {
+                        gamesSkipped++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex,
+                        "Error updating results for game {ExternalGameId}. Continuing with next game.",
+                        game.ExternalGameId);
+                    gamesSkipped++;
+                }
+            }
+
+            // Step 5: Save all changes in a single transaction
+            var changeCount = await moneyballRepository.SaveChangesAsync();
+
+            // Step 6: Log final counts (acceptance criteria: count logged)
+            logger.LogInformation(
+                "Game results update complete. Updated: {Updated}, Completed: {Completed}, Changed: {Changed}, Skipped: {Skipped}, Total processed: {Total}",
+                gamesUpdated, gamesCompleted, changeCount, gamesSkipped, recentGames.Count);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error updating game results");
+            logger.LogError(ex, "Error during game results update");
             throw;
         }
     }
