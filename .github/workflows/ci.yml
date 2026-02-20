@@ -1,0 +1,43 @@
+name: Moneyball CI
+
+on:
+  push:
+    branches:
+      - develop
+      - master
+  pull_request:
+    branches:
+      - develop
+      - master
+
+jobs:
+  build:
+    name: Build Solution
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore Moneyball.slnx
+
+      - name: Build solution
+        run: dotnet build Moneyball.slnx --configuration Release --no-restore
+
+      # Optional — remove if no test projects exist
+      - name: Run tests
+        run: dotnet test Moneyball.slnx --configuration Release --no-build --verbosity normal
