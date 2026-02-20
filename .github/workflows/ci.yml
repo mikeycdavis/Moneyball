@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       checks: write
-      contents: read
+      contents: write
 
     env:
       DOTNET_VERSION: '10.0.x'
