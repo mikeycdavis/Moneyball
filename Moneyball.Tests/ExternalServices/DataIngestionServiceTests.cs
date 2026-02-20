@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Moneyball.Core.DTOs.ExternalAPIs.Odds;
 using Moneyball.Core.DTOs.ExternalAPIs.SportsRadar;
 using Moneyball.Core.Entities;
 using Moneyball.Core.Enums;
@@ -1915,4 +1916,931 @@ public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
             }
         };
     }
+}
+
+/// <summary>
+/// Unit tests for DataIngestionService.IngestNBAOddsAsync odds ingestion methods (SportsRadar).
+/// Uses Moq for mocking dependencies and FluentAssertions for readable assertions.
+/// </summary>
+public class DataIngestionService_IngestNBAOddsAsyncTests
+{
+    private readonly Mock<IMoneyballRepository> _mockMoneyballRepository;
+    private readonly Mock<ISportsDataService> _mockSportsDataService;
+    private readonly Mock<ILogger<DataIngestionService>> _mockLogger;
+    private readonly DataIngestionService _service;
+
+    // Mock repositories
+    private readonly Mock<IGameRepository> _mockGamesRepo;
+    private readonly Mock<IOddsRepository> _mockOddsRepo;
+    private readonly Mock<IRepository<Sport>> _mockSportsRepo;
+
+    /// <summary>
+    /// Test fixture setup - initializes all mocks and creates service instance.
+    /// Runs before each test method to ensure clean state.
+    /// </summary>
+    public DataIngestionService_IngestNBAOddsAsyncTests()
+    {
+        _mockMoneyballRepository = new Mock<IMoneyballRepository>();
+        _mockSportsDataService = new Mock<ISportsDataService>();
+        var mockOddsDataService = new Mock<IOddsDataService>();
+        _mockLogger = new Mock<ILogger<DataIngestionService>>();
+
+        _mockSportsRepo = new Mock<IRepository<Sport>>();
+        _mockGamesRepo = new Mock<IGameRepository>();
+        _mockOddsRepo = new Mock<IOddsRepository>();
+        var mockTeamsRepo = new Mock<ITeamRepository>();
+
+        // Wire up repository properties
+        _mockMoneyballRepository.Setup(r => r.Sports).Returns(_mockSportsRepo.Object);
+        _mockMoneyballRepository.Setup(r => r.Games).Returns(_mockGamesRepo.Object);
+        _mockMoneyballRepository.Setup(r => r.Odds).Returns(_mockOddsRepo.Object);
+        _mockMoneyballRepository.Setup(r => r.Teams).Returns(mockTeamsRepo.Object);
+
+        _service = new DataIngestionService(
+            _mockMoneyballRepository.Object,
+            _mockSportsDataService.Object,
+            mockOddsDataService.Object,
+            _mockLogger.Object);
+    }
+
+    /// <summary>
+    /// Tests successful NBA odds ingestion with all market types.
+    /// Verifies that moneyline, spread, and totals are correctly mapped to Odds entity.
+    /// </summary>
+    [Fact]
+    public async Task IngestNBAOddsAsync_SuccessfulIngestion_MapsAllMarketTypes()
+    {
+        // Arrange - Setup game in database
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync(nbaSport);
+
+        var externalGameId = "sr:match:12345678";
+        var game = new Game
+        {
+            SportId = nbaSport.SportId,
+            GameId = 1,
+            ExternalGameId = externalGameId,
+            HomeTeamId = 10,
+            AwayTeamId = 20
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGameByExternalIdAsync(externalGameId, nbaSport.SportId))
+            .ReturnsAsync(game);
+
+        // Arrange - Setup odds response with all markets
+        var oddsResponse = CreateNBAOddsResponse(externalGameId);
+        _mockSportsDataService
+            .Setup(s => s.GetNBAOddsAsync(externalGameId))
+            .ReturnsAsync(oddsResponse);
+
+        // Arrange - Capture added odds
+        var addedOdds = new List<Odds>();
+        _mockOddsRepo
+            .Setup(r => r.AddAsync(It.IsAny<Odds>()))
+            .Callback<Odds>(o => addedOdds.Add(o))
+            .ReturnsAsync((Odds o) => o);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        // Act
+        await _service.IngestNBAOddsAsync(externalGameId);
+
+        // Assert - Verify all market types are mapped
+        addedOdds.Should().ContainSingle("one bookmaker should create one Odds row");
+
+        var odds = addedOdds.First();
+        odds.GameId.Should().Be(1, "GameId should be set from game entity");
+        odds.BookmakerName.Should().Be("DraftKings", "bookmaker name should be set");
+
+        // Moneyline fields
+        odds.HomeMoneyline.Should().Be(-150m, "home moneyline should be mapped from 1x2 market");
+        odds.AwayMoneyline.Should().Be(130m, "away moneyline should be mapped from 1x2 market");
+
+        // Spread fields
+        odds.HomeSpread.Should().Be(-3.5m, "home spread line should be mapped");
+        odds.AwaySpread.Should().Be(3.5m, "away spread line should be mapped");
+        odds.HomeSpreadOdds.Should().Be(-110m, "home spread odds should be mapped");
+        odds.AwaySpreadOdds.Should().Be(-110m, "away spread odds should be mapped");
+
+        // Total fields
+        odds.OverUnder.Should().Be(220.5m, "over/under line should be mapped");
+        odds.OverOdds.Should().Be(-110m, "over odds should be mapped");
+        odds.UnderOdds.Should().Be(-110m, "under odds should be mapped");
+    }
+
+    /// <summary>
+    /// Tests that null or empty game ID throws ArgumentException with correct parameter name.
+    /// Validates input validation logic.
+    /// </summary>
+    [Theory]
+    [InlineData(null, "null game ID should throw")]
+    [InlineData("", "empty game ID should throw")]
+    [InlineData("   ", "whitespace game ID should throw")]
+    public async Task IngestNBAOddsAsync_NullOrEmptyGameId_ThrowsArgumentException(
+        string? gameId,
+        string because)
+    {
+        // Act & Assert
+        await FluentActions.Awaiting(async () => await _service.IngestNBAOddsAsync(gameId!))
+            .Should().ThrowAsync<ArgumentException>(because)
+            .WithMessage("*ExternalGameId cannot be null or empty*")
+            .WithParameterName("externalGameId");
+    }
+
+    /// <summary>
+    /// Tests that ingestion throws when game is not found in database.
+    /// Ensures schedule ingestion is required before odds ingestion.
+    /// </summary>
+    [Fact]
+    public async Task IngestNBAOddsAsync_GameNotFound_ThrowsInvalidOperationException()
+    {
+        // Arrange - No game in database
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync(nbaSport);
+
+        _mockGamesRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Game, bool>>>()))
+            .ReturnsAsync((Game?)null);
+
+        // Act & Assert
+        await FluentActions.Awaiting(async () => await _service.IngestNBAOddsAsync("sr:match:99999999"))
+            .Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*not found in database*", "should indicate game doesn't exist")
+            .WithMessage("*IngestNBAScheduleAsync*", "should tell user to run schedule ingestion first");
+    }
+
+    /// <summary>
+    /// Tests that method returns early when API returns null.
+    /// Verifies graceful handling when odds are not yet available.
+    /// </summary>
+    [Fact]
+    public async Task IngestNBAOddsAsync_NullOddsResponse_ReturnsEarlyWithoutError()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync(nbaSport);
+
+        var externalGameId = "sr:match:12345678";
+
+        var game = new Game
+        {
+            SportId = nbaSport.SportId,
+            GameId = 1,
+            ExternalGameId = externalGameId,
+            HomeTeamId = 10,
+            AwayTeamId = 20
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGameByExternalIdAsync(externalGameId, nbaSport.SportId))
+            .ReturnsAsync(game);
+        
+        // API returns null (odds not available yet)
+        _mockSportsDataService
+            .Setup(s => s.GetNBAOddsAsync(externalGameId))
+            .ReturnsAsync((NBAOddsResponse?)null);
+
+        // Act
+        await _service.IngestNBAOddsAsync(externalGameId);
+
+        // Assert - No odds should be added
+        _mockOddsRepo.Verify(r => r.AddAsync(It.IsAny<Odds>()), Times.Never,
+            "no odds should be added when API returns null");
+
+        _mockMoneyballRepository.Verify(r => r.SaveChangesAsync(), Times.Never,
+            "SaveChanges should not be called when no data");
+
+        // Verify info log about no odds available
+        VerifyLogInformation("No odds data returned");
+    }
+
+    /// <summary>
+    /// Tests that multiple markets from same bookmaker are combined into one row.
+    /// Validates the grouping logic that creates one Odds row per bookmaker.
+    /// </summary>
+    [Fact]
+    public async Task IngestNBAOddsAsync_MultipleBookmakers_CreatesOneRowPerBookmaker()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync(nbaSport);
+
+        var externalGameId = "sr:match:12345678";
+
+        var game = new Game
+        {
+            SportId = nbaSport.SportId,
+            GameId = 1,
+            ExternalGameId = externalGameId,
+            HomeTeamId = 10,
+            AwayTeamId = 20
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGameByExternalIdAsync(externalGameId, nbaSport.SportId))
+            .ReturnsAsync(game);
+
+        // Response with two bookmakers
+        var oddsResponse = new NBAOddsResponse
+        {
+            Sport_Event_Id = externalGameId,
+            Markets =
+            [
+                new NBAMarket
+                {
+                    Name = "1x2",
+                    Bookmakers =
+                    [
+                        new NBABookmaker { Name = "DraftKings", Outcomes = [] },
+                        new NBABookmaker { Name = "FanDuel", Outcomes = [] }
+                    ]
+                }
+            ]
+        };
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAOddsAsync(externalGameId))
+            .ReturnsAsync(oddsResponse);
+
+        var addedOdds = new List<Odds>();
+        _mockOddsRepo
+            .Setup(r => r.AddAsync(It.IsAny<Odds>()))
+            .Callback<Odds>(o => addedOdds.Add(o))
+            .ReturnsAsync((Odds o) => o);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(2);
+
+        // Act
+        await _service.IngestNBAOddsAsync(externalGameId);
+
+        // Assert - One row per bookmaker
+        addedOdds.Should().HaveCount(2, "two bookmakers should create two Odds rows");
+        addedOdds.Select(o => o.BookmakerName).Should().OnlyHaveUniqueItems(
+            "each bookmaker should have exactly one row");
+        addedOdds.Should().Contain(o => o.BookmakerName == "DraftKings");
+        addedOdds.Should().Contain(o => o.BookmakerName == "FanDuel");
+    }
+
+    #region Helper Methods
+
+    /// <summary>
+    /// Sets up basic game mock for NBA odds tests.
+    /// Creates a valid game with the given external game ID.
+    /// </summary>
+    private void SetupBasicGameMock(int gameId)
+    {
+        var game = new Game
+        {
+            GameId = gameId,
+            ExternalGameId = gameId.ToString(),
+            HomeTeamId = 10,
+            AwayTeamId = 20
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Game, bool>>>()))
+            .ReturnsAsync(game);
+    }
+
+    /// <summary>
+    /// Creates a test NBAOddsResponse with all market types.
+    /// </summary>
+    private static NBAOddsResponse CreateNBAOddsResponse(string externalGameId)
+    {
+        return new NBAOddsResponse
+        {
+            Sport_Event_Id = externalGameId,
+            Markets =
+            [
+                new NBAMarket
+                {
+                    Name = "1x2",
+                    Bookmakers =
+                    [
+                        new NBABookmaker
+                        {
+                            Name = "DraftKings",
+                            Outcomes =
+                            [
+                                new NBAOutcome { Type = "1", Odds = -150 },
+                                new NBAOutcome { Type = "2", Odds = 130 }
+                            ]
+                        }
+                    ]
+                },
+
+                new NBAMarket
+                {
+                    Name = "pointspread",
+                    Bookmakers =
+                    [
+                        new NBABookmaker
+                        {
+                            Name = "DraftKings",
+                            Outcomes =
+                            [
+                                new NBAOutcome { Type = "1", Odds = -110, Line = -3.5m },
+                                new NBAOutcome { Type = "2", Odds = -110, Line = 3.5m }
+                            ]
+                        }
+                    ]
+                },
+
+                new NBAMarket
+                {
+                    Name = "totals",
+                    Bookmakers =
+                    [
+                        new NBABookmaker
+                        {
+                            Name = "DraftKings",
+                            Outcomes =
+                            [
+                                new NBAOutcome { Type = "over", Odds = -110, Line = 220.5m },
+                                new NBAOutcome { Type = "under", Odds = -110, Line = 220.5m }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+    }
+
+    /// <summary>
+    /// Verifies that an information log was written containing the expected message.
+    /// </summary>
+    private void VerifyLogInformation(string expectedMessage)
+    {
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains(expectedMessage)),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.AtLeastOnce);
+    }
+
+    #endregion
+}
+
+/// <summary>
+/// Unit tests for DataIngestionService.IngestOddsAsync odds ingestion methods (The Odds API).
+/// Uses Moq for mocking dependencies and FluentAssertions for readable assertions.
+/// </summary>
+public class DataIngestionService_IngestOddsAsyncTests
+{
+    private readonly Mock<IMoneyballRepository> _mockMoneyballRepository;
+    private readonly Mock<IOddsDataService> _mockOddsDataService;
+    private readonly Mock<ILogger<DataIngestionService>> _mockLogger;
+    private readonly DataIngestionService _service;
+
+    // Mock repositories
+    private readonly Mock<IRepository<Sport>> _mockSportsRepo;
+    private readonly Mock<IGameRepository> _mockGameRepository;
+    private readonly Mock<IOddsRepository> _mockOddsRepo;
+
+    /// <summary>
+    /// Test fixture setup - initializes all mocks and creates service instance.
+    /// Runs before each test method to ensure clean state.
+    /// </summary>
+    public DataIngestionService_IngestOddsAsyncTests()
+    {
+        _mockMoneyballRepository = new Mock<IMoneyballRepository>();
+        var mockSportsDataService = new Mock<ISportsDataService>();
+        _mockOddsDataService = new Mock<IOddsDataService>();
+        _mockLogger = new Mock<ILogger<DataIngestionService>>();
+
+        _mockSportsRepo = new Mock<IRepository<Sport>>();
+        _mockGameRepository = new Mock<IGameRepository>();
+        _mockOddsRepo = new Mock<IOddsRepository>();
+        var mockTeamsRepo = new Mock<ITeamRepository>();
+
+        // Wire up repository properties
+        _mockMoneyballRepository.Setup(r => r.Sports).Returns(_mockSportsRepo.Object);
+        _mockMoneyballRepository.Setup(r => r.Games).Returns(_mockGameRepository.Object);
+        _mockMoneyballRepository.Setup(r => r.Odds).Returns(_mockOddsRepo.Object);
+        _mockMoneyballRepository.Setup(r => r.Teams).Returns(mockTeamsRepo.Object);
+
+        _service = new DataIngestionService(
+            _mockMoneyballRepository.Object,
+            mockSportsDataService.Object,
+            _mockOddsDataService.Object,
+            _mockLogger.Object);
+    }
+
+    /// <summary>
+    /// Tests successful odds ingestion from The Odds API with team name matching.
+    /// Verifies date window matching and team name fuzzy matching logic.
+    /// </summary>
+    [Fact]
+    public async Task IngestOddsAsync_SuccessfulIngestion_MatchesGamesByDateAndTeams()
+    {
+        // Arrange - Setup sport
+        var sport = "basketball_nba";
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync(nbaSport);
+
+        // Arrange - Setup odds response
+        var gameTime = DateTime.UtcNow.AddDays(1);
+        var oddsResponse = CreateTheOddsAPIResponse(gameTime);
+
+        _mockOddsDataService
+            .Setup(s => s.GetOddsAsync(sport))
+            .ReturnsAsync(oddsResponse);
+
+        // Arrange - Setup matching game in database
+        var games = new List<Game>
+        {
+            new()
+            {
+                GameId = 1,
+                GameDate = gameTime,
+                HomeTeamId = 1,
+                AwayTeamId = 2,
+                HomeTeam = new Team { TeamId = 1, Name = "Los Angeles Lakers", City = "Los Angeles" },
+                AwayTeam = new Team { TeamId = 2, Name = "Boston Celtics", City = "Boston" }
+            }
+        };
+
+        _mockGameRepository
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(games);
+
+        var addedOdds = new List<Odds>();
+        _mockOddsRepo
+            .Setup(r => r.AddAsync(It.IsAny<Odds>()))
+            .Callback<Odds>(o => addedOdds.Add(o))
+            .ReturnsAsync((Odds o) => o);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        // Act
+        await _service.IngestOddsAsync(sport);
+
+        // Assert - Odds should be added for matched game
+        addedOdds.Should().ContainSingle("one bookmaker should create one odds row");
+
+        var odds = addedOdds.First();
+        odds.GameId.Should().Be(1, "should match to the correct game");
+        odds.BookmakerName.Should().Be("DraftKings", "bookmaker name should be set");
+    }
+
+    /// <summary>
+    /// Tests that unsupported sport keys throw ArgumentException.
+    /// Validates sport mapping logic.
+    /// </summary>
+    [Theory]
+    [InlineData("baseball_mlb", "MLB not mapped yet")]
+    [InlineData("icehockey_nhl", "NHL not mapped yet")]
+    [InlineData("invalid_sport", "completely invalid sport")]
+    public async Task IngestOddsAsync_UnsupportedSport_ThrowsArgumentException(
+        string sport,
+        string because)
+    {
+        // Act & Assert
+        var act = async () => await _service.IngestOddsAsync(sport);
+
+        await act.Should().ThrowAsync<ArgumentException>(because)
+            .WithMessage($"*Unsupported sport: {sport}*");
+    }
+
+    /// <summary>
+    /// Tests that method returns early when sport is not found in database.
+    /// Verifies graceful handling of missing sport seed data.
+    /// </summary>
+    [Fact]
+    public async Task IngestOddsAsync_SportNotFound_ReturnsEarly()
+    {
+        // Arrange - No sport in database
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync((Sport?)null);
+
+        // Act
+        await _service.IngestOddsAsync("basketball_nba");
+
+        // Assert - Should return early without calling odds API
+        _mockOddsDataService.Verify(s => s.GetOddsAsync(It.IsAny<string>()), Times.Never,
+            "should not fetch odds when sport not found");
+
+        _mockMoneyballRepository.Verify(r => r.SaveChangesAsync(), Times.Never,
+            "should not save when sport not found");
+
+        // Verify error was logged
+        VerifyLogError("Sport");
+        VerifyLogError("not found");
+    }
+
+    /// <summary>
+    /// Tests team name matching with various formats.
+    /// Verifies fuzzy matching logic for team names and cities.
+    /// </summary>
+    [Theory]
+    [InlineData("Lakers", "Los Angeles Lakers", true, "team name suffix should match")]
+    [InlineData("Los Angeles", "Los Angeles Lakers", true, "city should match team name")]
+    [InlineData("Boston Celtics", "Boston Celtics", true, "exact match should work")]
+    [InlineData("Phoenix Suns", "Los Angeles Lakers", false, "different teams should not match")]
+    public async Task IngestOddsAsync_TeamNameMatching_WorksCorrectly(
+        string oddsTeamName,
+        string dbTeamName,
+        bool shouldMatch,
+        string because)
+    {
+        // Arrange
+        var sport = "basketball_nba";
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync(nbaSport);
+
+        var gameTime = DateTime.UtcNow.AddDays(1);
+        var oddsResponse = new OddsResponse
+        {
+            Data =
+            [
+                new OddsGame
+                {
+                    Id = "game-1",
+                    CommenceTime = gameTime,
+                    HomeTeam = oddsTeamName,
+                    AwayTeam = "Test Away Team",
+                    Bookmakers =
+                    [
+                        new Bookmaker
+                        {
+                            Title = "TestBook",
+                            Markets =
+                            [
+                                new Market
+                                {
+                                    Key = "h2h",
+                                    Outcomes =
+                                    [
+                                        new Outcome { Name = oddsTeamName, Price = -150 },
+                                        new Outcome { Name = "Test Away Team", Price = 130 }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        _mockOddsDataService
+            .Setup(s => s.GetOddsAsync(sport))
+            .ReturnsAsync(oddsResponse);
+
+        var games = new List<Game>
+        {
+            new()
+            {
+                GameId = 1,
+                GameDate = gameTime,
+                HomeTeam = new Team { Name = dbTeamName, City = dbTeamName.Split(' ').First() },
+                AwayTeam = new Team { Name = "Test Away Team", City = "Test" }
+            }
+        };
+
+        _mockGameRepository
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(games);
+
+        var addedOdds = new List<Odds>();
+        _mockOddsRepo
+            .Setup(r => r.AddAsync(It.IsAny<Odds>()))
+            .Callback<Odds>(o => addedOdds.Add(o))
+            .ReturnsAsync((Odds o) => o);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        // Act
+        await _service.IngestOddsAsync(sport);
+
+        // Assert
+        if (shouldMatch)
+        {
+            addedOdds.Should().NotBeEmpty(because);
+        }
+        else
+        {
+            addedOdds.Should().BeEmpty(because);
+        }
+    }
+
+    /// <summary>
+    /// Tests that games outside the date window are not matched.
+    /// Verifies the ±2 hour date window matching logic.
+    /// </summary>
+    [Fact]
+    public async Task IngestOddsAsync_GameOutsideDateWindow_NotMatched()
+    {
+        // Arrange
+        var sport = "basketball_nba";
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync(nbaSport);
+
+        var oddsGameTime = DateTime.UtcNow.AddDays(1);
+        var oddsResponse = CreateTheOddsAPIResponse(oddsGameTime);
+
+        _mockOddsDataService
+            .Setup(s => s.GetOddsAsync(sport))
+            .ReturnsAsync(oddsResponse);
+
+        _mockGameRepository
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync([]);
+
+        // Act
+        await _service.IngestOddsAsync(sport);
+
+        // Assert - No odds should be added (game outside date window)
+        _mockOddsRepo.Verify(r => r.AddAsync(It.IsAny<Odds>()), Times.Never,
+            "games outside ±2 hour window should not be matched");
+    }
+
+    /// <summary>
+    /// Tests that all three market types (h2h, spreads, totals) are correctly mapped.
+    /// Verifies field mapping from The Odds API format to Odds entity.
+    /// </summary>
+    [Fact]
+    public async Task IngestOddsAsync_MapsAllMarketTypes_Correctly()
+    {
+        // Arrange
+        var sport = "basketball_nba";
+        SetupBasicOddsAPIMocks(sport);
+
+        var gameTime = DateTime.UtcNow.AddDays(1);
+        var oddsResponse = CreateTheOddsAPIResponse(gameTime);
+
+        _mockOddsDataService
+            .Setup(s => s.GetOddsAsync(sport))
+            .ReturnsAsync(oddsResponse);
+
+        SetupMatchingGameForOddsAPI(gameTime);
+
+        var addedOdds = new List<Odds>();
+        _mockOddsRepo
+            .Setup(r => r.AddAsync(It.IsAny<Odds>()))
+            .Callback<Odds>(o => addedOdds.Add(o))
+            .ReturnsAsync((Odds o) => o);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        // Act
+        await _service.IngestOddsAsync(sport);
+
+        // Assert - All market types should be mapped
+        addedOdds.Should().ContainSingle();
+
+        var odds = addedOdds.First();
+
+        // h2h market (moneyline)
+        odds.HomeMoneyline.Should().Be(-150m, "home moneyline from h2h market");
+        odds.AwayMoneyline.Should().Be(130m, "away moneyline from h2h market");
+
+        // spreads market
+        odds.HomeSpread.Should().Be(-3.5m, "home spread point");
+        odds.AwaySpread.Should().Be(3.5m, "away spread point");
+        odds.HomeSpreadOdds.Should().Be(-110m, "home spread price");
+        odds.AwaySpreadOdds.Should().Be(-110m, "away spread price");
+
+        // totals market
+        odds.OverUnder.Should().Be(220.5m, "total line from Over outcome");
+        odds.OverOdds.Should().Be(-110m, "over price");
+        odds.UnderOdds.Should().Be(-110m, "under price");
+    }
+
+    /// <summary>
+    /// Tests that unmatched games are logged as debug without errors.
+    /// Verifies graceful handling of odds that don't match any database game.
+    /// </summary>
+    [Fact]
+    public async Task IngestOddsAsync_NoMatchingGame_LogsDebugAndContinues()
+    {
+        // Arrange
+        var sport = "basketball_nba";
+        SetupBasicOddsAPIMocks(sport);
+
+        var oddsResponse = CreateTheOddsAPIResponse(DateTime.UtcNow);
+        _mockOddsDataService
+            .Setup(s => s.GetOddsAsync(sport))
+            .ReturnsAsync(oddsResponse);
+
+        // No games in date range
+        _mockGameRepository
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(new List<Game>());
+
+        // Act
+        await _service.IngestOddsAsync(sport);
+
+        // Assert - No odds should be added
+        _mockOddsRepo.Verify(r => r.AddAsync(It.IsAny<Odds>()), Times.Never);
+
+        // Verify debug log
+        VerifyLogDebug("No matching game found");
+    }
+
+    /// <summary>
+    /// Tests that sport key mapping works for both NBA and NFL.
+    /// </summary>
+    [Theory]
+    [InlineData("basketball_nba", "NBA")]
+    [InlineData("americanfootball_nfl", "NFL")]
+    public async Task IngestOddsAsync_SportKeyMapping_WorksCorrectly(
+        string sportKey,
+        string expectedSportName)
+    {
+        // Arrange
+        Sport? capturedSport = null;
+
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .Callback<Expression<Func<Sport, bool>>>(expr =>
+            {
+                var testSport = new Sport { SportId = 1, Name = expectedSportName };
+                if (expr.Compile()(testSport))
+                {
+                    capturedSport = testSport;
+                }
+            })
+            .ReturnsAsync(new Sport { SportId = 1, Name = expectedSportName });
+
+        _mockOddsDataService
+            .Setup(s => s.GetOddsAsync(sportKey))
+            .ReturnsAsync(new OddsResponse { Data = [] });
+
+        // Act
+        await _service.IngestOddsAsync(sportKey);
+
+        // Assert - Correct sport name should be queried
+        capturedSport.Should().NotBeNull($"{sportKey} should map to {expectedSportName}");
+        capturedSport!.Name.Should().Be(expectedSportName);
+    }
+
+    #region Helper Methods
+
+    /// <summary>
+    /// Sets up basic mocks for The Odds API tests.
+    /// </summary>
+    private void SetupBasicOddsAPIMocks(string sport)
+    {
+        var sportName = sport == "basketball_nba" ? "NBA" : "NFL";
+        var sportEntity = new Sport { SportId = 1, Name = sportName };
+
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync(sportEntity);
+    }
+
+    /// <summary>
+    /// Sets up a matching game for The Odds API tests.
+    /// </summary>
+    private void SetupMatchingGameForOddsAPI(DateTime gameTime)
+    {
+        var games = new List<Game>
+        {
+            new()
+            {
+                GameId = 1,
+                GameDate = gameTime,
+                HomeTeamId = 1,
+                AwayTeamId = 2,
+                HomeTeam = new Team { TeamId = 1, Name = "Los Angeles Lakers", City = "Los Angeles" },
+                AwayTeam = new Team { TeamId = 2, Name = "Boston Celtics", City = "Boston" }
+            }
+        };
+
+        _mockGameRepository
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(games);
+    }
+
+    /// <summary>
+    /// Creates a test OddsResponse from The Odds API with all market types.
+    /// </summary>
+    private static OddsResponse CreateTheOddsAPIResponse(DateTime commenceTime)
+    {
+        return new OddsResponse
+        {
+            Data =
+            [
+                new OddsGame
+                {
+                    Id = "game-123",
+                    CommenceTime = commenceTime,
+                    HomeTeam = "Los Angeles Lakers",
+                    AwayTeam = "Boston Celtics",
+                    Bookmakers =
+                    [
+                        new Bookmaker
+                        {
+                            Title = "DraftKings",
+                            Markets =
+                            [
+                                new Market
+                                {
+                                    Key = "h2h",
+                                    Outcomes =
+                                    [
+                                        new Outcome { Name = "Los Angeles Lakers", Price = -150 },
+                                        new Outcome { Name = "Boston Celtics", Price = 130 }
+                                    ]
+                                },
+
+                                new Market
+                                {
+                                    Key = "spreads",
+                                    Outcomes =
+                                    [
+                                        new Outcome { Name = "Los Angeles Lakers", Price = -110, Point = -3.5m },
+                                        new Outcome { Name = "Boston Celtics", Price = -110, Point = 3.5m }
+                                    ]
+                                },
+
+                                new Market
+                                {
+                                    Key = "totals",
+                                    Outcomes =
+                                    [
+                                        new Outcome { Name = "Over", Price = -110, Point = 220.5m },
+                                        new Outcome { Name = "Under", Price = -110, Point = 220.5m }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+    }
+
+    /// <summary>
+    /// Verifies that a debug log was written containing the expected message.
+    /// </summary>
+    private void VerifyLogDebug(string expectedMessage)
+    {
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Debug,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains(expectedMessage)),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.AtLeastOnce);
+    }
+
+    /// <summary>
+    /// Verifies that an error was logged containing the expected message.
+    /// </summary>
+    private void VerifyLogError(string expectedMessage)
+    {
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains(expectedMessage)),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.AtLeastOnce);
+    }
+
+    #endregion
 }

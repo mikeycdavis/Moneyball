@@ -412,12 +412,21 @@ public class DataIngestionService(
             // Step 1: Validate input
             if (string.IsNullOrWhiteSpace(externalGameId))
             {
-                logger.LogWarning("ExternalGameId is null or empty. Cannot fetch odds.");
+                logger.LogWarning("ExternalGameId is null or empty. Cannot fetch statistics.");
                 throw new ArgumentException("ExternalGameId cannot be null or empty", nameof(externalGameId));
             }
 
-            // Step 2: Verify game exists in database
-            var game = await moneyballRepository.Games.FirstOrDefaultAsync(g => g.ExternalGameId == externalGameId);
+            // Step 2: Get NBA sport entity
+            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
+
+            if (nbaSport == null)
+            {
+                logger.LogError("NBA sport not found in database. Ensure Sports seed data exists.");
+                throw new InvalidOperationException("NBA sport not found in database. Run database migrations or execute DatabaseSetup.sql to seed Sports table.");
+            }
+
+            // Step 3: Get the game from database
+            var game = await moneyballRepository.Games.GetGameByExternalIdAsync(externalGameId, nbaSport.SportId);
 
             if (game == null)
             {
@@ -425,7 +434,7 @@ public class DataIngestionService(
                 throw new InvalidOperationException($"Game {externalGameId} not found in database. Run IngestNBAScheduleAsync first to create the game.");
             }
 
-            // Step 3: Fetch odds from SportRadar API
+            // Step 4: Fetch odds from SportRadar API
             logger.LogInformation("Fetching odds for game {GameId} from SportRadar API", externalGameId);
             var oddsResponse = await sportsDataService.GetNBAOddsAsync(externalGameId);
 
@@ -435,7 +444,7 @@ public class DataIngestionService(
                 return;
             }
 
-            // Step 4: Process odds for each bookmaker
+            // Step 5: Process odds for each bookmaker
             // Group markets by bookmaker to create one Odds row per bookmaker
             var bookmakerOddsMap = new Dictionary<string, Odds>();
 
@@ -483,7 +492,7 @@ public class DataIngestionService(
                 }
             }
 
-            // Step 5: Save all odds in a single transaction
+            // Step 6: Save all odds in a single transaction
             var oddsAdded = 0;
             foreach (var odds in bookmakerOddsMap.Values)
             {
