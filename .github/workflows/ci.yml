@@ -25,6 +25,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -85,40 +88,39 @@ jobs:
           fi
           # Set step output
           echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+          
+      - name: Set badge file
+        if: github.ref_name == 'master' || github.ref_name == 'develop'
+        run: |
+          if [ "${GITHUB_REF_NAME}" == "master" ]; then
+            echo "BADGE_FILE=badges/coverage-master.svg" >> $GITHUB_ENV
+            echo "BADGE_MSG=chore: update coverage badge for master" >> $GITHUB_ENV
+          else
+            echo "BADGE_FILE=badges/coverage-develop.svg" >> $GITHUB_ENV
+            echo "BADGE_MSG=chore: update coverage badge for develop" >> $GITHUB_ENV
+          fi
 
       - name: Generate Coverage Badge
+        if: github.ref_name == 'master' || github.ref_name == 'develop'
         uses: emibcn/badge-action@v2
         with:
           label: coverage
           status: >-
-            ${{ 
-              steps.coverage.outputs.coverage 
-            }} %
+            ${{ steps.coverage.outputs.coverage }} %
           color: >-
             ${{
               steps.coverage.outputs.coverage >= 80 && 'brightgreen' ||
               steps.coverage.outputs.coverage >= 70 && 'yellow' ||
               'red'
             }}
-          path: >- 
-            ${{
-              github.ref == 'refs/heads/master' && 'badges/coverage-master.svg' || 
-              github.ref == 'refs/heads/develop' && 'badges/coverage-develop.svg'
-            }}
+          path: ${{ env.BADGE_FILE }}
 
       - name: Commit Badge
+        if: github.ref_name == 'master' || github.ref_name == 'develop'
         uses: EndBug/add-and-commit@v9
         with:
-          add: >-
-            ${{
-              github.ref == 'refs/heads/master' && 'badges/coverage-master.svg' || 
-              github.ref == 'refs/heads/develop' && 'badges/coverage-develop.svg'
-            }}
-          message: >-
-            ${{
-              github.ref == 'refs/heads/master' && 'chore: update coverage badge for master' || 
-              github.ref == 'refs/heads/develop' && 'chore: update coverage badge for develop'
-            }}
+          add: ${{ env.BADGE_FILE }}
+          message: ${{ env.BADGE_MSG }}
           push: true
           default_author: github_actor
           pathspec_error_handling: ignore
