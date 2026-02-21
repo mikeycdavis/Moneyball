@@ -2104,7 +2104,7 @@ public class DataIngestionService_IngestNBAOddsAsyncTests
         _mockGamesRepo
             .Setup(r => r.GetGameByExternalIdAsync(externalGameId, nbaSport.SportId))
             .ReturnsAsync(game);
-        
+
         // API returns null (odds not available yet)
         _mockSportsDataService
             .Setup(s => s.GetNBAOddsAsync(externalGameId))
@@ -2195,25 +2195,6 @@ public class DataIngestionService_IngestNBAOddsAsyncTests
     }
 
     #region Helper Methods
-
-    /// <summary>
-    /// Sets up basic game mock for NBA odds tests.
-    /// Creates a valid game with the given external game ID.
-    /// </summary>
-    private void SetupBasicGameMock(int gameId)
-    {
-        var game = new Game
-        {
-            GameId = gameId,
-            ExternalGameId = gameId.ToString(),
-            HomeTeamId = 10,
-            AwayTeamId = 20
-        };
-
-        _mockGamesRepo
-            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Game, bool>>>()))
-            .ReturnsAsync(game);
-    }
 
     /// <summary>
     /// Creates a test NBAOddsResponse with all market types.
@@ -2843,4 +2824,863 @@ public class DataIngestionService_IngestOddsAsyncTests
     }
 
     #endregion
+}
+
+/// <summary>
+/// Unit tests for DataIngestionService.UpdateNBAGameResultsAsync method.
+/// Tests cover all acceptance criteria: 48-hour window, IsComplete flip, score population, and count logging.
+/// Uses Moq for mocking dependencies and FluentAssertions for readable assertions.
+/// </summary>
+public class DataIngestionService_UpdateNBAGameResultsAsyncTests
+{
+    private readonly Mock<IMoneyballRepository> _mockMoneyballRepository;
+    private readonly Mock<ISportsDataService> _mockSportsDataService;
+    private readonly Mock<ILogger<DataIngestionService>> _mockLogger;
+    private readonly DataIngestionService _service;
+
+    // Mock repositories
+    private readonly Mock<IRepository<Sport>> _mockSportsRepo;
+    private readonly Mock<IGameRepository> _mockGamesRepo;
+
+    /// <summary>
+    /// Test fixture setup - initializes all mocks and creates service instance.
+    /// Runs before each test method to ensure clean state.
+    /// </summary>
+    public DataIngestionService_UpdateNBAGameResultsAsyncTests()
+    {
+        _mockMoneyballRepository = new Mock<IMoneyballRepository>();
+        _mockSportsDataService = new Mock<ISportsDataService>();
+        var mockOddsDataService = new Mock<IOddsDataService>();
+        _mockLogger = new Mock<ILogger<DataIngestionService>>();
+
+        _mockSportsRepo = new Mock<IRepository<Sport>>();
+        _mockGamesRepo = new Mock<IGameRepository>();
+
+        // Wire up repository properties
+        _mockMoneyballRepository.Setup(r => r.Sports).Returns(_mockSportsRepo.Object);
+        _mockMoneyballRepository.Setup(r => r.Games).Returns(_mockGamesRepo.Object);
+
+        _service = new DataIngestionService(
+            _mockMoneyballRepository.Object,
+            _mockSportsDataService.Object,
+            mockOddsDataService.Object,
+            _mockLogger.Object);
+    }
+
+    /// <summary>
+    /// Tests that only games within the last 48 hours are checked.
+    /// Validates the acceptance criteria for time window filtering.
+    /// </summary>
+    [Fact]
+    public async Task UpdateNBAGameResultsAsync_ChecksGamesWithinLast48Hours()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        SetupBasicMocks(nbaSport);
+
+        DateTime? capturedStartDate = null;
+        DateTime? capturedEndDate = null;
+
+        // Capture the date range parameters passed to GetGamesByDateRangeAsync
+        _mockGamesRepo
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .Callback<DateTime, DateTime, int?>((start, end, _) =>
+            {
+                capturedStartDate = start;
+                capturedEndDate = end;
+            })
+            .ReturnsAsync(new List<Game>());
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAScheduleAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<NBAGame>());
+
+        // Act
+        await _service.UpdateNBAGameResultsAsync();
+
+        // Assert - Verify 48-hour window (acceptance criteria)
+        capturedStartDate.Should().NotBeNull("start date should be captured");
+        capturedEndDate.Should().NotBeNull("end date should be captured");
+
+        var now = DateTime.UtcNow;
+        var expectedStart = now.AddHours(-48);
+
+        capturedStartDate.Should().BeCloseTo(expectedStart, TimeSpan.FromSeconds(5),
+            "start date should be approximately 48 hours ago");
+        capturedEndDate.Should().BeCloseTo(now.AddHours(1), TimeSpan.FromSeconds(5),
+            "end date should be approximately current time with 1-hour buffer");
+    }
+
+    /// <summary>
+    /// Tests that IsComplete is flipped from false to true when game status is closed.
+    /// Validates the acceptance criteria for IsComplete flag flip.
+    /// </summary>
+    [Fact]
+    public async Task UpdateNBAGameResultsAsync_FlipsIsComplete_WhenGameClosed()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        SetupBasicMocks(nbaSport);
+
+        // Database game that is not yet complete
+        var dbGame = new Game
+        {
+            GameId = 1,
+            ExternalGameId = "sr:match:12345678",
+            IsComplete = false,  // Not complete yet
+            Status = GameStatus.InProgress,
+            HomeScore = null,
+            AwayScore = null,
+            GameDate = DateTime.UtcNow.AddHours(-2)
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(new List<Game> { dbGame });
+
+        // API game shows game is complete
+        var apiGame = new NBAGame
+        {
+            Id = "sr:match:12345678",
+            Status = "closed",  // Game is complete
+            HomePoints = 110,
+            AwayPoints = 105,
+            Home = new NBATeamInfo { Name = "Lakers" },
+            Away = new NBATeamInfo { Name = "Celtics" }
+        };
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAScheduleAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<NBAGame> { apiGame });
+
+        _mockGamesRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Game>()))
+            .Returns(Task.CompletedTask);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        // Act
+        await _service.UpdateNBAGameResultsAsync();
+
+        // Assert - IsComplete should be flipped (acceptance criteria)
+        dbGame.IsComplete.Should().BeTrue("game should be marked complete when status is 'closed'");
+        dbGame.Status.Should().Be(GameStatus.Final, "status should be set to Final");
+    }
+
+    /// <summary>
+    /// Tests that HomeScore and AwayScore are populated from API game data.
+    /// Validates the acceptance criteria for score population.
+    /// </summary>
+    [Fact]
+    public async Task UpdateNBAGameResultsAsync_PopulatesScores_FromAPIGame()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        SetupBasicMocks(nbaSport);
+
+        // Database game without scores
+        var dbGame = new Game
+        {
+            GameId = 1,
+            ExternalGameId = "sr:match:12345678",
+            IsComplete = false,
+            HomeScore = null,  // No score yet
+            AwayScore = null,  // No score yet
+            GameDate = DateTime.UtcNow.AddHours(-1)
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(new List<Game> { dbGame });
+
+        // API game with final scores
+        var apiGame = new NBAGame
+        {
+            Id = "sr:match:12345678",
+            Status = "closed",
+            HomePoints = 118,  // Final home score
+            AwayPoints = 112,  // Final away score
+            Home = new NBATeamInfo { Name = "Lakers" },
+            Away = new NBATeamInfo { Name = "Celtics" }
+        };
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAScheduleAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<NBAGame> { apiGame });
+
+        _mockGamesRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Game>()))
+            .Returns(Task.CompletedTask);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        // Act
+        await _service.UpdateNBAGameResultsAsync();
+
+        // Assert - Scores should be populated (acceptance criteria)
+        dbGame.HomeScore.Should().Be(118, "home score should be populated from API game");
+        dbGame.AwayScore.Should().Be(112, "away score should be populated from API game");
+    }
+
+    /// <summary>
+    /// Tests that update counts are logged correctly after processing.
+    /// Validates the acceptance criteria for logging counts.
+    /// </summary>
+    [Fact]
+    public async Task UpdateNBAGameResultsAsync_LogsCounts_AfterCompletion()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        SetupBasicMocks(nbaSport);
+
+        // Three games: one to update, one already complete, one not in API response
+        var dbGames = new List<Game>
+        {
+            new()
+            {
+                GameId = 1,
+                ExternalGameId = "game-1",
+                IsComplete = false,
+                HomeScore = null,
+                AwayScore = null,
+                GameDate = DateTime.UtcNow.AddHours(-1)
+            },
+            new()
+            {
+                GameId = 2,
+                ExternalGameId = "game-2",
+                IsComplete = true,  // Already complete
+                HomeScore = 100,
+                AwayScore = 95,
+                GameDate = DateTime.UtcNow.AddHours(-2)
+            },
+            new()
+            {
+                GameId = 3,
+                ExternalGameId = "game-3",
+                IsComplete = false,
+                HomeScore = null,
+                AwayScore = null,
+                GameDate = DateTime.UtcNow.AddHours(-3)
+            }
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(dbGames);
+
+        // API only has game-1 (game-3 not in API response)
+        var apiGames = new List<NBAGame>
+        {
+            new()
+            {
+                Id = "game-1",
+                Status = "closed",
+                HomePoints = 110,
+                AwayPoints = 105,
+                Home = new NBATeamInfo { Name = "Team A" },
+                Away = new NBATeamInfo { Name = "Team B" }
+            }
+        };
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAScheduleAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(apiGames);
+
+        _mockGamesRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Game>()))
+            .Returns(Task.CompletedTask);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        // Act
+        await _service.UpdateNBAGameResultsAsync();
+
+        // Assert - Counts should be logged (acceptance criteria)
+        VerifyLogInformation("Updated: 1");      // game-1 updated
+        VerifyLogInformation("Completed: 1");    // game-1 completed
+        VerifyLogInformation("Skipped: 2");      // game-2 (already complete) + game-3 (not in API)
+        VerifyLogInformation("Total processed: 3");
+    }
+
+    /// <summary>
+    /// Tests that already completed games are skipped without processing.
+    /// Verifies optimization that doesn't re-process complete games.
+    /// </summary>
+    [Fact]
+    public async Task UpdateNBAGameResultsAsync_SkipsAlreadyCompleteGames()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        SetupBasicMocks(nbaSport);
+
+        // Game already marked as complete
+        var dbGame = new Game
+        {
+            GameId = 1,
+            ExternalGameId = "sr:match:12345678",
+            IsComplete = true,  // Already complete
+            Status = GameStatus.Final,
+            HomeScore = 110,
+            AwayScore = 105,
+            GameDate = DateTime.UtcNow.AddHours(-2)
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(new List<Game> { dbGame });
+
+        var apiGames = new List<NBAGame>
+        {
+            new()
+            {
+                Id = "sr:match:12345678",
+                Status = "closed",
+                HomePoints = 110,
+                AwayPoints = 105,
+                Home = new NBATeamInfo { Name = "Lakers" },
+                Away = new NBATeamInfo { Name = "Celtics" }
+            }
+        };
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAScheduleAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(apiGames);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(0);
+
+        // Act
+        await _service.UpdateNBAGameResultsAsync();
+
+        // Assert - Game should not be updated
+        _mockGamesRepo.Verify(
+            r => r.UpdateAsync(It.IsAny<Game>()),
+            Times.Never,
+            "already complete games should not be updated");
+    }
+
+    /// <summary>
+    /// Tests that games not found in API response are skipped.
+    /// Verifies handling of games that exist in DB but not in API.
+    /// </summary>
+    [Fact]
+    public async Task UpdateNBAGameResultsAsync_SkipsGames_NotInAPIResponse()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        SetupBasicMocks(nbaSport);
+
+        // Database game
+        var dbGame = new Game
+        {
+            GameId = 1,
+            ExternalGameId = "sr:match:99999999",  // Not in API response
+            IsComplete = false,
+            GameDate = DateTime.UtcNow.AddHours(-1)
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(new List<Game> { dbGame });
+
+        // API response doesn't include this game
+        var apiGames = new List<NBAGame>
+        {
+            new()
+            {
+                Id = "sr:match:different-id",
+                Status = "closed",
+                HomePoints = 100,
+                AwayPoints = 95,
+                Home = new NBATeamInfo { Name = "Team A" },
+                Away = new NBATeamInfo { Name = "Team B" }
+            }
+        };
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAScheduleAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(apiGames);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(0);
+
+        // Act
+        await _service.UpdateNBAGameResultsAsync();
+
+        // Assert - Game should be skipped
+        _mockGamesRepo.Verify(
+            r => r.UpdateAsync(It.IsAny<Game>()),
+            Times.Never,
+            "games not in API response should be skipped");
+    }
+
+    /// <summary>
+    /// Tests that in-progress games get score updates without IsComplete flip.
+    /// Verifies partial updates for live games.
+    /// </summary>
+    [Fact]
+    public async Task UpdateNBAGameResultsAsync_UpdatesInProgressGames_WithoutCompletingThem()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        SetupBasicMocks(nbaSport);
+
+        var dbGame = new Game
+        {
+            GameId = 1,
+            ExternalGameId = "sr:match:12345678",
+            IsComplete = false,
+            Status = GameStatus.Scheduled,
+            HomeScore = null,
+            AwayScore = null,
+            GameDate = DateTime.UtcNow.AddHours(-1)
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(new List<Game> { dbGame });
+
+        // Game in progress (halftime scores)
+        var apiGame = new NBAGame
+        {
+            Id = "sr:match:12345678",
+            Status = "inprogress",  // Not complete yet
+            HomePoints = 55,  // Halftime score
+            AwayPoints = 48,  // Halftime score
+            Home = new NBATeamInfo { Name = "Lakers" },
+            Away = new NBATeamInfo { Name = "Celtics" }
+        };
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAScheduleAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<NBAGame> { apiGame });
+
+        _mockGamesRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Game>()))
+            .Returns(Task.CompletedTask);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        // Act
+        await _service.UpdateNBAGameResultsAsync();
+
+        // Assert - Scores updated but not complete
+        dbGame.HomeScore.Should().Be(55, "in-progress score should be updated");
+        dbGame.AwayScore.Should().Be(48, "in-progress score should be updated");
+        dbGame.IsComplete.Should().BeFalse("game should not be marked complete when in progress");
+        dbGame.Status.Should().Be(GameStatus.InProgress, "status should be updated to InProgress");
+    }
+
+    /// <summary>
+    /// Tests that scores are updated when they change from previous values.
+    /// Verifies score update detection logic.
+    /// </summary>
+    [Fact]
+    public async Task UpdateNBAGameResultsAsync_UpdatesChangedScores()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        SetupBasicMocks(nbaSport);
+
+        var dbGame = new Game
+        {
+            GameId = 1,
+            ExternalGameId = "sr:match:12345678",
+            IsComplete = false,
+            HomeScore = 55,  // Old halftime score
+            AwayScore = 48,  // Old halftime score
+            GameDate = DateTime.UtcNow.AddHours(-1)
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(new List<Game> { dbGame });
+
+        // Final scores (game complete)
+        var apiGame = new NBAGame
+        {
+            Id = "sr:match:12345678",
+            Status = "closed",
+            HomePoints = 115,  // Final score
+            AwayPoints = 108,  // Final score
+            Home = new NBATeamInfo { Name = "Lakers" },
+            Away = new NBATeamInfo { Name = "Celtics" }
+        };
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAScheduleAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<NBAGame> { apiGame });
+
+        _mockGamesRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Game>()))
+            .Returns(Task.CompletedTask);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        // Act
+        await _service.UpdateNBAGameResultsAsync();
+
+        // Assert - Scores updated to final values
+        dbGame.HomeScore.Should().Be(115, "score should be updated to final value");
+        dbGame.AwayScore.Should().Be(108, "score should be updated to final value");
+        dbGame.IsComplete.Should().BeTrue("game should be marked complete");
+    }
+
+    /// <summary>
+    /// Tests that NBA sport not found throws exception.
+    /// Validates prerequisite checking.
+    /// </summary>
+    [Fact]
+    public async Task UpdateNBAGameResultsAsync_NBASportNotFound_ThrowsException()
+    {
+        // Arrange - No NBA sport in database
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync((Sport?)null);
+
+        // Act & Assert
+        var act = async () => await _service.UpdateNBAGameResultsAsync();
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*NBA sport not found*");
+    }
+
+    /// <summary>
+    /// Tests that method returns early when no recent games found in database.
+    /// Verifies graceful handling of empty result set from database.
+    /// </summary>
+    [Fact]
+    public async Task UpdateNBAGameResultsAsync_NoRecentGamesInDB_ReturnsEarly()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        SetupBasicMocks(nbaSport);
+
+        // No games in database
+        _mockGamesRepo
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(new List<Game>());
+
+        // Act
+        await _service.UpdateNBAGameResultsAsync();
+
+        // Assert - Should return early without calling API
+        _mockSportsDataService.Verify(
+            s => s.GetNBAScheduleAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()),
+            Times.Never,
+            "should not call API when no database games found");
+
+        VerifyLogInformation("No recent games found");
+    }
+
+    /// <summary>
+    /// Tests that method returns early when API returns no games.
+    /// Verifies graceful handling of empty API response.
+    /// </summary>
+    [Fact]
+    public async Task UpdateNBAGameResultsAsync_NoGamesFromAPI_ReturnsEarly()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        SetupBasicMocks(nbaSport);
+
+        // Database has games
+        var dbGames = new List<Game>
+        {
+            new() { GameId = 1, ExternalGameId = "game-1", IsComplete = false, GameDate = DateTime.UtcNow.AddHours(-1) }
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(dbGames);
+
+        // API returns no games
+        _mockSportsDataService
+            .Setup(s => s.GetNBAScheduleAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<NBAGame>());
+
+        // Act
+        await _service.UpdateNBAGameResultsAsync();
+
+        // Assert - Should return early without updates
+        _mockGamesRepo.Verify(
+            r => r.UpdateAsync(It.IsAny<Game>()),
+            Times.Never,
+            "should not update when API returns no games");
+
+        VerifyLogInformation("No games returned from SportRadar API");
+    }
+
+    /// <summary>
+    /// Tests that errors for individual games are logged and processing continues.
+    /// Verifies resilience to partial failures.
+    /// </summary>
+    [Fact]
+    public async Task UpdateNBAGameResultsAsync_ErrorForOneGame_ContinuesWithOthers()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        SetupBasicMocks(nbaSport);
+
+        // Two games in database
+        var dbGames = new List<Game>
+        {
+            new() { GameId = 1, ExternalGameId = "game-1", IsComplete = false, GameDate = DateTime.UtcNow.AddHours(-1) },
+            new() { GameId = 2, ExternalGameId = "game-2", IsComplete = false, GameDate = DateTime.UtcNow.AddHours(-2) }
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(dbGames);
+
+        // API returns both games
+        var apiGames = new List<NBAGame>
+        {
+            new()
+            {
+                Id = "game-1",
+                Status = "closed",
+                HomePoints = 110,
+                AwayPoints = 105,
+                Home = new NBATeamInfo { Name = "Team A" },
+                Away = new NBATeamInfo { Name = "Team B" }
+            },
+            new()
+            {
+                Id = "game-2",
+                Status = "closed",
+                HomePoints = 100,
+                AwayPoints = 95,
+                Home = new NBATeamInfo { Name = "Team C" },
+                Away = new NBATeamInfo { Name = "Team D" }
+            }
+        };
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAScheduleAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(apiGames);
+
+        // First update throws exception, second succeeds
+        var updateCount = 0;
+        _mockGamesRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Game>()))
+            .Returns(() =>
+            {
+                updateCount++;
+                if (updateCount == 1)
+                {
+                    throw new Exception("Database error");
+                }
+                return Task.CompletedTask;
+            });
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        // Act
+        await _service.UpdateNBAGameResultsAsync();
+
+        // Assert - Second game should still be processed
+        dbGames[1].IsComplete.Should().BeTrue("second game should be processed despite first game error");
+
+        VerifyLogWarning("Error updating results");
+    }
+
+    /// <summary>
+    /// Tests various game status mappings for IsComplete determination.
+    /// Verifies status mapping logic with different API status values.
+    /// </summary>
+    [Theory]
+    [InlineData("closed", true, GameStatus.Final)]
+    [InlineData("complete", true, GameStatus.Final)]
+    [InlineData("final", true, GameStatus.Final)]
+    [InlineData("inprogress", false, GameStatus.InProgress)]
+    [InlineData("scheduled", false, GameStatus.Scheduled)]
+    [InlineData("halftime", false, GameStatus.InProgress)]
+    public async Task UpdateNBAGameResultsAsync_StatusMapping_WorksCorrectly(
+        string apiStatus,
+        bool expectedIsComplete,
+        GameStatus expectedGameStatus)
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        SetupBasicMocks(nbaSport);
+
+        var dbGame = new Game
+        {
+            GameId = 1,
+            ExternalGameId = "sr:match:12345678",
+            IsComplete = false,
+            Status = GameStatus.Scheduled,
+            GameDate = DateTime.UtcNow.AddHours(-1)
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(new List<Game> { dbGame });
+
+        var apiGame = new NBAGame
+        {
+            Id = "sr:match:12345678",
+            Status = apiStatus,
+            HomePoints = 110,
+            AwayPoints = 105,
+            Home = new NBATeamInfo { Name = "Lakers" },
+            Away = new NBATeamInfo { Name = "Celtics" }
+        };
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAScheduleAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<NBAGame> { apiGame });
+
+        _mockGamesRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Game>()))
+            .Returns(Task.CompletedTask);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        // Act
+        await _service.UpdateNBAGameResultsAsync();
+
+        // Assert
+        dbGame.IsComplete.Should().Be(expectedIsComplete,
+            $"status '{apiStatus}' should set IsComplete={expectedIsComplete}");
+        dbGame.Status.Should().Be(expectedGameStatus,
+            $"status '{apiStatus}' should map to {expectedGameStatus}");
+    }
+
+    /// <summary>
+    /// Tests that UpdatedAt timestamp is set when game is modified.
+    /// Verifies audit tracking.
+    /// </summary>
+    [Fact]
+    public async Task UpdateNBAGameResultsAsync_SetsUpdatedAt_WhenGameModified()
+    {
+        // Arrange
+        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        SetupBasicMocks(nbaSport);
+
+        var dbGame = new Game
+        {
+            GameId = 1,
+            ExternalGameId = "sr:match:12345678",
+            IsComplete = false,
+            UpdatedAt = DateTime.UtcNow.AddHours(-5),  // Old timestamp
+            GameDate = DateTime.UtcNow.AddHours(-1)
+        };
+
+        _mockGamesRepo
+            .Setup(r => r.GetGamesByDateRangeAsync(
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<int?>()))
+            .ReturnsAsync(new List<Game> { dbGame });
+
+        var apiGame = new NBAGame
+        {
+            Id = "sr:match:12345678",
+            Status = "closed",
+            HomePoints = 110,
+            AwayPoints = 105,
+            Home = new NBATeamInfo { Name = "Lakers" },
+            Away = new NBATeamInfo { Name = "Celtics" }
+        };
+
+        _mockSportsDataService
+            .Setup(s => s.GetNBAScheduleAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<NBAGame> { apiGame });
+
+        _mockGamesRepo
+            .Setup(r => r.UpdateAsync(It.IsAny<Game>()))
+            .Returns(Task.CompletedTask);
+
+        _mockMoneyballRepository.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        var beforeUpdate = DateTime.UtcNow;
+
+        // Act
+        await _service.UpdateNBAGameResultsAsync();
+
+        var afterUpdate = DateTime.UtcNow;
+
+        // Assert - UpdatedAt should be set to current time
+        dbGame.UpdatedAt.Should().BeOnOrAfter(beforeUpdate, "UpdatedAt should be recent");
+        dbGame.UpdatedAt.Should().BeOnOrBefore(afterUpdate, "UpdatedAt should not be in future");
+    }
+
+    // ==================== Helper Methods ====================
+
+    /// <summary>
+    /// Sets up basic mocks required for most tests.
+    /// </summary>
+    private void SetupBasicMocks(Sport nbaSport)
+    {
+        _mockSportsRepo
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
+            .ReturnsAsync(nbaSport);
+    }
+
+    /// <summary>
+    /// Verifies that an information log was written containing the expected message.
+    /// </summary>
+    private void VerifyLogInformation(string expectedMessage)
+    {
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains(expectedMessage)),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.AtLeastOnce);
+    }
+
+    /// <summary>
+    /// Verifies that a warning was logged containing the expected message.
+    /// </summary>
+    private void VerifyLogWarning(string expectedMessage)
+    {
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains(expectedMessage)),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.AtLeastOnce);
+    }
 }
