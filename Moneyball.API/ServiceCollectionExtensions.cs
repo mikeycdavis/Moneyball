@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Http.Resilience;
+using Moneyball.API.Background_Services;
 using Moneyball.Core.Interfaces.ExternalAPIs;
 using Moneyball.Core.Interfaces.ExternalServices;
 using Moneyball.Core.Interfaces.Repositories;
@@ -20,7 +21,7 @@ public static class ServiceCollectionExtensions
         {
             if (configuration.GetValue<bool>("DataIngestion:EnableBackgroundService"))
             {
-                //services.AddHostedService<DataIngestionBackgroundService>();
+                services.AddHostedService<DataIngestionBackgroundService>();
             }
         }
 

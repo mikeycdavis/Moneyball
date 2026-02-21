@@ -1,4 +1,4 @@
-﻿using Moneyball.Core.Interfaces.ExternalAPIs;
+﻿using Moneyball.Core.Interfaces.ExternalServices;
 
 namespace Moneyball.API.Background_Services;
 

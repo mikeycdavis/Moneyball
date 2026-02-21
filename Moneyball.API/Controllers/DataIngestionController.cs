@@ -76,6 +76,46 @@ public class DataIngestionController(
     }
 
     /// <summary>
+    /// Ingest NBA statistics for a game
+    /// </summary>
+    /// <param name="externalGameId">SportRadar game ID</param>
+    [HttpPost("nba/statistics/{externalGameId}")]
+    public async Task<IActionResult> IngestNBAGameStatisticsAsync(string externalGameId)
+    {
+        try
+        {
+            logger.LogInformation("Manual statistics ingestion triggered for {GameId}", externalGameId);
+            await dataIngestionService.IngestNBAGameStatisticsAsync(externalGameId);
+            return Ok(new { message = $"Statistics ingestion completed for {externalGameId}" });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error ingesting statistics");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Ingest NBA odds for a game
+    /// </summary>
+    /// <param name="externalGameId">SportRadar game ID</param>
+    [HttpPost("nba/odds/{externalGameId}")]
+    public async Task<IActionResult> IngestNBAOdds(string externalGameId)
+    {
+        try
+        {
+            logger.LogInformation("Manual odds ingestion triggered for {GameId}", externalGameId);
+            await dataIngestionService.IngestNBAOddsAsync(externalGameId);
+            return Ok(new { message = $"Odds ingestion completed for {externalGameId}" });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error ingesting odds");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Ingest odds for a sport
     /// </summary>
     /// <param name="sport">Sport key (basketball_nba, americanfootball_nfl)</param>
@@ -117,17 +157,13 @@ public class DataIngestionController(
     /// <summary>
     /// Update game results for recent games
     /// </summary>
-    /// <param name="startDate">Start date (YYYY-MM-DD)</param>
-    /// <param name="endDate">End date (YYYY-MM-DD)</param>
     [HttpPost("results")]
-    public async Task<IActionResult> UpdateGameResults(
-        [FromQuery] DateTime? startDate = null,
-        [FromQuery] DateTime? endDate = null)
+    public async Task<IActionResult> UpdateNBAGameResults()
     {
         try
         {
-            var start = startDate ?? DateTime.UtcNow.Date;
-            var end = endDate ?? DateTime.UtcNow.Date.AddDays(7);
+            var start = DateTime.UtcNow.AddHours(-48);
+            var end = DateTime.UtcNow.AddHours(1);
 
             logger.LogInformation("Manual game results update triggered from {Start} to {End}", start, end);
             await dataIngestionService.UpdateNBAGameResultsAsync();
