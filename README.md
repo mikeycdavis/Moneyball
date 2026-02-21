@@ -1,7 +1,7 @@
 # Moneyball
 
-**Build Status**
-![Develop CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/ci.yml?branch=develop&label=develop)
+**Build Status**  
+![Develop CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/ci.yml?branch=develop&label=develop)  
 ![Master CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/ci.yml?branch=master&label=master)
 
 **Coverage**  
