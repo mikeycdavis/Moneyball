@@ -104,7 +104,8 @@ jobs:
         if: github.ref_name == 'master' || github.ref_name == 'develop'
         uses: emibcn/badge-action@v2
         with:
-          label: coverage
+          label: >-
+            ${{ github.ref_name }}
           status: >-
             ${{ steps.coverage.outputs.coverage }} %
           color: >-
