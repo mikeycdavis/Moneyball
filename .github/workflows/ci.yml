@@ -118,8 +118,8 @@ jobs:
             ${{ steps.coverage.outputs.coverage }}%
           color: >-
             ${{
-              steps.coverage.outputs.coverage >= env.COVERAGE_THRESHOLD && 'brightgreen' ||
-              steps.coverage.outputs.coverage >= env.COVERAGE_THRESHOLD_WARNING && 'yellow' ||
+              fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD) && 'brightgreen' ||
+              fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD_WARNING) && 'yellow' ||
               'red'
             }}
           path: ${{ env.BADGE_FILE }}
