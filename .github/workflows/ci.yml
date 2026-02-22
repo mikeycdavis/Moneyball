@@ -23,6 +23,13 @@ jobs:
       COVERAGE_THRESHOLD: 35
 
     steps:
+      - name: Calculate Thresholds
+      run: |
+        # Explicitly set scale=0 to ensure truncation to integer
+        WARNING=$(echo "scale=0; ($COVERAGE_THRESHOLD * 0.85) / 1" | bc)
+        
+        echo "COVERAGE_THRESHOLD_WARNING=$WARNING" >> $GITHUB_ENV
+        
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -111,7 +118,7 @@ jobs:
           color: >-
             ${{
               steps.coverage.outputs.coverage >= env.COVERAGE_THRESHOLD && 'brightgreen' ||
-              steps.coverage.outputs.coverage >= floor(env.COVERAGE_THRESHOLD * 0.85) && 'yellow' ||
+              steps.coverage.outputs.coverage >= env.COVERAGE_THRESHOLD_WARNING && 'yellow' ||
               'red'
             }}
           path: ${{ env.BADGE_FILE }}
