@@ -188,7 +188,7 @@ public class DataIngestionBackgroundServiceTests
         var (service, cts) = await StartServicePastStartupLogAsync();
 
         // Wait a bit on startup to let the application fully initialize
-        await Task.Delay(TimeSpan.FromMinutes(1), cts.Token);
+        await Task.Delay(TimeSpan.FromSeconds(75), cts.Token);
 
         // CancelAndStopAsync awaits service.ExecuteTask, which only resolves once
         // ExecuteAsync has fully exited — the stopping log is guaranteed written.
@@ -564,7 +564,7 @@ public class DataIngestionBackgroundServiceTests
         catch (OperationCanceledException) { /* propagated by WaitAsync on timeout edge case */ }
         finally
         {
-            await service.StopAsync(CancellationToken.None);
+            await service.StopAsync(cts.Token);
         }
     }
 
