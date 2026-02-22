@@ -20,7 +20,7 @@ jobs:
 
     env:
       DOTNET_VERSION: '10.0.x'
-      COVERAGE_THRESHOLD: 30
+      COVERAGE_THRESHOLD: 35
 
     steps:
       - name: Checkout repository
@@ -110,8 +110,8 @@ jobs:
             ${{ steps.coverage.outputs.coverage }}%
           color: >-
             ${{
-              steps.coverage.outputs.coverage >= 80 && 'brightgreen' ||
-              steps.coverage.outputs.coverage >= 70 && 'yellow' ||
+              steps.coverage.outputs.coverage >= env.COVERAGE_THRESHOLD && 'brightgreen' ||
+              steps.coverage.outputs.coverage >= floor(env.COVERAGE_THRESHOLD * 0.85) && 'yellow' ||
               'red'
             }}
           path: ${{ env.BADGE_FILE }}
