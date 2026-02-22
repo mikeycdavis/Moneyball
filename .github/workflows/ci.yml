@@ -103,9 +103,11 @@ jobs:
           if [ "${GITHUB_REF_NAME}" == "master" ]; then
             echo "BADGE_FILE=badges/coverage-master.svg" >> $GITHUB_ENV
             echo "BADGE_MSG=chore: update coverage badge for master" >> $GITHUB_ENV
+            echo "BADGE_FILE = $BADGE_FILE"
           else
             echo "BADGE_FILE=badges/coverage-develop.svg" >> $GITHUB_ENV
             echo "BADGE_MSG=chore: update coverage badge for develop" >> $GITHUB_ENV
+            echo "BADGE_FILE = $BADGE_FILE"
           fi
 
       - name: Generate Coverage Badge
@@ -114,7 +116,7 @@ jobs:
         with:
           label: ${{ github.ref_name }}
           status: ${{ steps.coverage.outputs.coverage }}%
-          color: "${{ fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD) && 'brightgreen' || fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD_WARNING) && 'yellow' || 'red' }}"
+          color: "${{ fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD) && 'orange' || fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD_WARNING) && 'yellow' || 'red' }}"
           path: ${{ env.BADGE_FILE }}
 
       - name: Commit Badge
