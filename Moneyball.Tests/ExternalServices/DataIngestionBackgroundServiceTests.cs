@@ -172,6 +172,11 @@ public class DataIngestionBackgroundServiceTests
             "orchestrator should not be called when cancelled during startup delay");
     }
 
+    // ==================== Slow Tests (up to 90s) ====================
+    // These tests must wait out the real 1-minute startup delay before the
+    // orchestrator is invoked. They await service.ExecuteTask rather than
+    // polling with arbitrary Task.Delay calls.
+
     /// <summary>
     /// Tests that service stops gracefully on cancellation.
     /// CancelAndStopAsync awaits ExecuteTask to full completion, which only happens
@@ -191,11 +196,6 @@ public class DataIngestionBackgroundServiceTests
 
         VerifyLogInformation("Data Ingestion Background Service is stopping");
     }
-
-    // ==================== Slow Tests (up to 90s) ====================
-    // These tests must wait out the real 1-minute startup delay before the
-    // orchestrator is invoked. They await service.ExecuteTask rather than
-    // polling with arbitrary Task.Delay calls.
 
     /// <summary>
     /// Tests that orchestrator is called after the startup delay.
