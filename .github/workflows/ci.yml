@@ -29,7 +29,7 @@ jobs:
           WARNING=$(echo "scale=0; ($COVERAGE_THRESHOLD * 0.85) / 1" | bc)
           echo "COVERAGE_THRESHOLD_WARNING=$WARNING" >> $GITHUB_ENV
           echo "COVERAGE_THRESHOLD = $COVERAGE_THRESHOLD"
-          echo "COVERAGE_THRESHOLD_WARNING = $COVERAGE_THRESHOLD_WARNING"
+          echo "COVERAGE_THRESHOLD_WARNING = $WARNING"
         
       - name: Checkout repository
         uses: actions/checkout@v4
