@@ -122,7 +122,7 @@ jobs:
         with:
           label: ${{ github.ref_name }}
           status: ${{ steps.coverage.outputs.coverage }}%
-          color: "${{ env.BADGE_COLOR }}"
+          color: ${{ env.BADGE_COLOR }}
           path: ${{ env.BADGE_FILE }}
 
       - name: Commit Badge
