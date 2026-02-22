@@ -112,7 +112,7 @@ jobs:
           
       - name: Set Badge Color
         run: |
-            BADGE_COLOR="${{ fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD) && 'lawngreen' || fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD_WARNING) && 'yellow' || 'red' }}"
+            BADGE_COLOR="${{ fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD) && '4c1' || fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD_WARNING) && 'yellow' || 'red' }}"
             echo "BADGE_COLOR=$COLOR" >> $GITHUB_ENV
             echo "BADGE_COLOR = $BADGE_COLOR"
           
