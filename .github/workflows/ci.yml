@@ -97,7 +97,7 @@ jobs:
           # Set step output
           echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
           
-      - name: Set badge file
+      - name: Set Badge File
         if: github.ref_name == 'master' || github.ref_name == 'develop'
         run: |
           if [ "${GITHUB_REF_NAME}" == "master" ]; then
@@ -109,14 +109,20 @@ jobs:
             echo "BADGE_MSG=chore: update coverage badge for develop" >> $GITHUB_ENV
             echo "BADGE_FILE = $BADGE_FILE"
           fi
-
+          
+      - name: Set Badge Color
+        run: |
+            BADGE_COLOR="${{ fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD) && 'orange' || fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD_WARNING) && 'yellow' || 'red' }}"
+            echo "BADGE_COLOR=$COLOR" >> $GITHUB_ENV
+            echo "BADGE_COLOR = $BADGE_COLOR"
+          
       - name: Generate Coverage Badge
         if: github.ref_name == 'master' || github.ref_name == 'develop'
         uses: emibcn/badge-action@v2
         with:
           label: ${{ github.ref_name }}
           status: ${{ steps.coverage.outputs.coverage }}%
-          color: "${{ fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD) && 'orange' || fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD_WARNING) && 'yellow' || 'red' }}"
+          color: "${{ env.BADGE_COLOR }}"
           path: ${{ env.BADGE_FILE }}
 
       - name: Commit Badge
