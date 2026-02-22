@@ -323,24 +323,19 @@ public class DataIngestionService(
     }
 
     /// <summary>
-    /// Ingests detailed box-score statistics for a specific NBA game.
+    /// Ingests detailed box-score statistics for a given date range.
     /// Maps all NBAStatistics fields to TeamStatistic columns and upserts for both home and away teams.
     /// </summary>
-    /// <param name="externalGameId">SportRadar game ID</param>
-    public async Task IngestNBAGameStatisticsAsync(string externalGameId)
+    /// <param name="startDate">Start date for schedule fetch</param>
+    /// <param name="endDate">End date for schedule fetch</param>
+    public async Task IngestNBAGameStatisticsAsync(DateTime startDate, DateTime endDate)
     {
-        logger.LogInformation("Starting NBA game statistics ingestion for game {GameId}", externalGameId);
+        logger.LogInformation("Starting NBA game statistics ingestion from {StartDate:yyyy-MM-dd} to {EndDate:yyyy-MM-dd}",
+            startDate, endDate);
 
         try
         {
-            // Step 1: Validate input
-            if (string.IsNullOrWhiteSpace(externalGameId))
-            {
-                logger.LogWarning("ExternalGameId is null or empty. Cannot fetch statistics.");
-                throw new ArgumentException("ExternalGameId cannot be null or empty", nameof(externalGameId));
-            }
-
-            // Step 2: Get NBA sport entity
+            // Step 1: Get NBA sport entity
             var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
 
             if (nbaSport == null)
@@ -349,74 +344,87 @@ public class DataIngestionService(
                 throw new InvalidOperationException("NBA sport not found in database. Run database migrations or execute DatabaseSetup.sql to seed Sports table.");
             }
 
-            // Step 3: Get the game from database
-            var game = await moneyballRepository.Games.GetGameByExternalIdAsync(externalGameId, nbaSport.SportId);
+            // Step 2: Fetch schedule from SportRadar API
+            logger.LogInformation("Fetching NBA schedule from SportRadar API");
+            var apiGames = (await sportsDataService.GetNBAScheduleAsync(startDate, endDate)).ToList();
 
-            if (game == null)
+            if (!apiGames.Any())
             {
-                logger.LogWarning("Game {GameId} not found in database. Run schedule ingestion first.", externalGameId);
-                throw new InvalidOperationException($"Game {externalGameId} not found in database. Run IngestNBAScheduleAsync first to create the game.");
-            }
-
-            // Step 4: Fetch statistics from SportRadar API
-            logger.LogInformation("Fetching statistics for game {GameId} from SportRadar API", externalGameId);
-            var statistics = await sportsDataService.GetNBAGameStatisticsAsync(externalGameId);
-
-            if (statistics == null)
-            {
-                logger.LogWarning("No statistics returned from SportRadar API for game {GameId}. Game may not have started yet.", externalGameId);
+                logger.LogInformation("No games returned from SportRadar API for date range {StartDate:yyyy-MM-dd} to {EndDate:yyyy-MM-dd}",
+                    startDate, endDate);
                 return;
             }
 
-            // Step 5: Upsert home team statistics
-            await UpsertTeamStatisticsAsync(
-                game.GameId,
-                game.HomeTeamId,
-                true, // isHomeTeam
-                statistics.Home.Statistics,
-                "Home");
+            logger.LogInformation("Received {Count} games from SportRadar API", apiGames.Count);
 
-            // Step 6: Upsert away team statistics
-            await UpsertTeamStatisticsAsync(
-                game.GameId,
-                game.AwayTeamId,
-                false, // isHomeTeam
-                statistics.Away.Statistics,
-                "Away");
+            foreach (var apiGame in apiGames)
+            {
+                // Step 3: Validate API data
+                if (string.IsNullOrWhiteSpace(apiGame.Id))
+                {
+                    logger.LogWarning("Skipping game with missing ID");
+                    continue;
+                }
 
-            // Step 7: Save all changes in a single transaction
-            var changeCount = await moneyballRepository.SaveChangesAsync();
+                // Step 4: Check if game already exists
+                var existingGame = await moneyballRepository.Games.GetGameByExternalIdAsync(apiGame.Id, nbaSport.SportId);
 
-            logger.LogInformation(
-                "NBA game statistics ingestion complete for game {GameId}. Changes saved: {ChangeCount}",
-                externalGameId, changeCount);
+                if (existingGame == null)
+                    continue;
+
+                // Step 5: Fetch statistics from SportRadar API
+                logger.LogInformation("Fetching statistics for game {GameId} from SportRadar API", apiGame.Id);
+                var statistics = await sportsDataService.GetNBAGameStatisticsAsync(apiGame.Id);
+
+                if (statistics == null)
+                {
+                    logger.LogWarning("No statistics returned from SportRadar API for game {GameId}. Game may not have started yet.", apiGame.Id);
+                    continue;
+                }
+
+                // Step 5: Upsert home team statistics
+                await UpsertTeamStatisticsAsync(
+                    existingGame.GameId,
+                    existingGame.HomeTeamId,
+                    true, // isHomeTeam
+                    statistics.Home.Statistics,
+                    "Home");
+
+                // Step 6: Upsert away team statistics
+                await UpsertTeamStatisticsAsync(
+                    existingGame.GameId,
+                    existingGame.AwayTeamId,
+                    false, // isHomeTeam
+                    statistics.Away.Statistics,
+                    "Away");
+
+                // Step 7: Save all changes in a single transaction
+                var changeCount = await moneyballRepository.SaveChangesAsync();
+
+                logger.LogInformation(
+                    "NBA game statistics ingestion complete for game {GameId}. Changes saved: {ChangeCount}",
+                    apiGame.Id, changeCount);
+            }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error during NBA game statistics ingestion for game {GameId}", externalGameId);
+            logger.LogError(ex, "Error during NBA game statistics ingestion");
             throw;
         }
     }
 
     /// <summary>
-    /// Ingests betting odds from SportRadar Odds Comparison API for a specific game.
+    /// Ingests betting odds from SportRadar Odds Comparison API for a given date range.
     /// Creates one Odds row per bookmaker.
     /// </summary>
-    /// <param name="externalGameId">SportRadar game ID</param>
-    public async Task IngestNBAOddsAsync(string externalGameId)
+    public async Task IngestNBAOddsAsync(DateTime startDate, DateTime endDate)
     {
-        logger.LogInformation("Starting SportRadar odds ingestion for game {GameId}", externalGameId);
+        logger.LogInformation("Starting SportRadar odds ingestion from {StartDate:yyyy-MM-dd} to {EndDate:yyyy-MM-dd}",
+            startDate, endDate);
 
         try
         {
-            // Step 1: Validate input
-            if (string.IsNullOrWhiteSpace(externalGameId))
-            {
-                logger.LogWarning("ExternalGameId is null or empty. Cannot fetch statistics.");
-                throw new ArgumentException("ExternalGameId cannot be null or empty", nameof(externalGameId));
-            }
-
-            // Step 2: Get NBA sport entity
+            // Step 1: Get NBA sport entity
             var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
 
             if (nbaSport == null)
@@ -425,98 +433,118 @@ public class DataIngestionService(
                 throw new InvalidOperationException("NBA sport not found in database. Run database migrations or execute DatabaseSetup.sql to seed Sports table.");
             }
 
-            // Step 3: Get the game from database
-            var game = await moneyballRepository.Games.GetGameByExternalIdAsync(externalGameId, nbaSport.SportId);
+            // Step 2: Fetch schedule from SportRadar API
+            logger.LogInformation("Fetching NBA schedule from SportRadar API");
+            var apiGames = (await sportsDataService.GetNBAScheduleAsync(startDate, endDate)).ToList();
 
-            if (game == null)
+            if (!apiGames.Any())
             {
-                logger.LogWarning("Game {GameId} not found in database. Run schedule ingestion first.", externalGameId);
-                throw new InvalidOperationException($"Game {externalGameId} not found in database. Run IngestNBAScheduleAsync first to create the game.");
-            }
-
-            // Step 4: Fetch odds from SportRadar API
-            logger.LogInformation("Fetching odds for game {GameId} from SportRadar API", externalGameId);
-            var oddsResponse = await sportsDataService.GetNBAOddsAsync(externalGameId);
-
-            if (oddsResponse == null || !oddsResponse.Markets.Any())
-            {
-                logger.LogInformation("No odds data returned for game {GameId}. Odds may not be available yet.", externalGameId);
+                logger.LogInformation("No games returned from SportRadar API for date range {StartDate:yyyy-MM-dd} to {EndDate:yyyy-MM-dd}",
+                    startDate, endDate);
                 return;
             }
 
-            // Step 5: Process odds for each bookmaker
-            // Group markets by bookmaker to create one Odds row per bookmaker
-            var bookmakerOddsMap = new Dictionary<string, Odds>();
+            logger.LogInformation("Received {Count} games from SportRadar API", apiGames.Count);
 
-            foreach (var market in oddsResponse.Markets)
+            foreach (var apiGame in apiGames)
             {
-                foreach (var bookmaker in market.Bookmakers)
+                // Step 3: Validate API data
+                if (string.IsNullOrWhiteSpace(apiGame.Id))
                 {
-                    // Get or create Odds entry for this bookmaker
-                    if (!bookmakerOddsMap.ContainsKey(bookmaker.Name))
+                    logger.LogWarning("Skipping game with missing ID");
+                    continue;
+                }
+
+                // Step 4: Check if game already exists
+                var existingGame = await moneyballRepository.Games.GetGameByExternalIdAsync(apiGame.Id, nbaSport.SportId);
+
+                if (existingGame == null)
+                    continue;
+
+                // Step 5: Fetch odds from SportRadar API
+                logger.LogInformation("Fetching odds for game {GameId} from SportRadar API", apiGame.Id);
+                var oddsResponse = await sportsDataService.GetNBAOddsAsync(apiGame.Id);
+
+                if (oddsResponse == null || !oddsResponse.Markets.Any())
+                {
+                    logger.LogInformation("No odds data returned for game {GameId}. Odds may not be available yet.", apiGame.Id);
+                    continue;
+                }
+
+                // Step 6: Process odds for each bookmaker
+                // Group markets by bookmaker to create one Odds row per bookmaker
+                var bookmakerOddsMap = new Dictionary<string, Odds>();
+
+                foreach (var market in oddsResponse.Markets)
+                {
+                    foreach (var bookmaker in market.Bookmakers)
                     {
-                        bookmakerOddsMap[bookmaker.Name] = new Odds
+                        // Get or create Odds entry for this bookmaker
+                        if (!bookmakerOddsMap.ContainsKey(bookmaker.Name))
                         {
-                            GameId = game.GameId,
-                            BookmakerName = bookmaker.Name,
-                            RecordedAt = DateTime.UtcNow
-                        };
-                    }
+                            bookmakerOddsMap[bookmaker.Name] = new Odds
+                            {
+                                GameId = existingGame.GameId,
+                                BookmakerName = bookmaker.Name,
+                                RecordedAt = DateTime.UtcNow
+                            };
+                        }
 
-                    var odds = bookmakerOddsMap[bookmaker.Name];
+                        var odds = bookmakerOddsMap[bookmaker.Name];
 
-                    // Map odds based on market type
-                    switch (market.Name.ToLower())
-                    {
-                        case "1x2": // Moneyline market
-                        case "moneyline":
-                            MapMoneylineOdds(bookmaker, odds);
-                            break;
+                        // Map odds based on market type
+                        switch (market.Name.ToLower())
+                        {
+                            case "1x2": // Moneyline market
+                            case "moneyline":
+                                MapMoneylineOdds(bookmaker, odds);
+                                break;
 
-                        case "pointspread":
-                        case "spread":
-                        case "handicap":
-                            MapSpreadOdds(bookmaker, odds);
-                            break;
+                            case "pointspread":
+                            case "spread":
+                            case "handicap":
+                                MapSpreadOdds(bookmaker, odds);
+                                break;
 
-                        case "totals":
-                        case "total":
-                        case "over/under":
-                            MapTotalOdds(bookmaker, odds);
-                            break;
+                            case "totals":
+                            case "total":
+                            case "over/under":
+                                MapTotalOdds(bookmaker, odds);
+                                break;
 
-                        default:
-                            logger.LogDebug("Skipping unknown market type: {MarketName}", market.Name);
-                            break;
+                            default:
+                                logger.LogDebug("Skipping unknown market type: {MarketName}", market.Name);
+                                break;
+                        }
                     }
                 }
+
+                // Step 6: Save all odds in a single transaction
+                var oddsAdded = 0;
+                foreach (var odds in bookmakerOddsMap.Values)
+                {
+                    await moneyballRepository.Odds.AddAsync(odds);
+                    oddsAdded++;
+
+                    logger.LogDebug(
+                        "Added odds from {Bookmaker} for game {GameId}: ML(H:{HomeML}/A:{AwayML}), Spread(H:{HomeSpread}@{HomeSpreadOdds}/A:{AwaySpread}@{AwaySpreadOdds}), Total:{OverUnder}(O:{OverOdds}/U:{UnderOdds})",
+                        odds.BookmakerName, existingGame.GameId,
+                        odds.HomeMoneyline, odds.AwayMoneyline,
+                        odds.HomeSpread, odds.HomeSpreadOdds,
+                        odds.AwaySpread, odds.AwaySpreadOdds,
+                        odds.OverUnder, odds.OverOdds, odds.UnderOdds);
+                }
+
+                var changeCount = await moneyballRepository.SaveChangesAsync();
+
+                logger.LogInformation(
+                    "SportRadar odds ingestion complete for game {GameId}. Added: {Added} bookmaker odds. Changes saved: {ChangeCount}",
+                    apiGame.Id, oddsAdded, changeCount);
             }
-
-            // Step 6: Save all odds in a single transaction
-            var oddsAdded = 0;
-            foreach (var odds in bookmakerOddsMap.Values)
-            {
-                await moneyballRepository.Odds.AddAsync(odds);
-                oddsAdded++;
-
-                logger.LogDebug(
-                    "Added odds from {Bookmaker} for game {GameId}: ML(H:{HomeML}/A:{AwayML}), Spread(H:{HomeSpread}@{HomeSpreadOdds}/A:{AwaySpread}@{AwaySpreadOdds}), Total:{OverUnder}(O:{OverOdds}/U:{UnderOdds})",
-                    odds.BookmakerName, game.GameId,
-                    odds.HomeMoneyline, odds.AwayMoneyline,
-                    odds.HomeSpread, odds.HomeSpreadOdds,
-                    odds.AwaySpread, odds.AwaySpreadOdds,
-                    odds.OverUnder, odds.OverOdds, odds.UnderOdds);
-            }
-
-            var changeCount = await moneyballRepository.SaveChangesAsync();
-
-            logger.LogInformation(
-                "SportRadar odds ingestion complete for game {GameId}. Added: {Added} bookmaker odds. Changes saved: {ChangeCount}",
-                externalGameId, oddsAdded, changeCount);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error during SportRadar odds ingestion for game {GameId}", externalGameId);
+            logger.LogError(ex, "Error during SportRadar odds ingestion");
             throw;
         }
     }
@@ -641,14 +669,15 @@ public class DataIngestionService(
     }
 
     /// <summary>
-    /// Updates NBA game results for completed games within the last 48 hours.
+    /// Updates NBA game results for completed games for a given date range.
     /// Fetches final scores from SportRadar and updates IsComplete flag and scores.
     /// Acceptance criteria: Games within last 48 hours checked; IsComplete flipped; 
     /// HomeScore/AwayScore populated; count logged.
     /// </summary>
-    public async Task UpdateNBAGameResultsAsync()
+    public async Task UpdateNBAGameResultsAsync(DateTime startDate, DateTime endDate)
     {
-        logger.LogInformation("Starting game results update for completed games");
+        logger.LogInformation("Starting NBA game result updates from {StartDate:yyyy-MM-dd} to {EndDate:yyyy-MM-dd}",
+            startDate, endDate);
 
         try
         {
@@ -661,56 +690,49 @@ public class DataIngestionService(
                 throw new InvalidOperationException("NBA sport not found in database. Ensure Sports seed data exists.");
             }
 
-            // Step 2: Get games within last 48 hours (acceptance criteria)
-            var cutoffTime = DateTime.UtcNow.AddHours(-48);
-            var recentGames = (await moneyballRepository.Games.GetGamesByDateRangeAsync(
-                cutoffTime,
-                DateTime.UtcNow.AddHours(1), // Small buffer for games just finishing
-                nbaSport.SportId)).ToList();
-
-            if (!recentGames.Any())
-            {
-                logger.LogInformation("No recent games found in the last 48 hours");
-                return;
-            }
-
-            logger.LogInformation("Found {Count} existing games in the last 48 hours to check", recentGames.Count);
-
             // Step 2: Fetch schedule from SportRadar API
             logger.LogInformation("Fetching NBA schedule from SportRadar API");
             var apiGames = (await sportsDataService.GetNBAScheduleAsync(
-                cutoffTime,
-                DateTime.UtcNow.AddHours(1))).ToList();
+                startDate, endDate)).ToList();
 
             if (!apiGames.Any())
             {
                 logger.LogInformation("No games returned from SportRadar API for date range {StartDate:yyyy-MM-dd} to {EndDate:yyyy-MM-dd}",
-                    cutoffTime, DateTime.UtcNow.AddHours(1));
+                    startDate, endDate);
                 return;
             }
 
-            logger.LogInformation("Found {Count} games from SportsRadar in the last 48 hours to check", apiGames.Count);
+            logger.LogInformation("Received {Count} games from SportRadar API", apiGames.Count);
 
             var gamesUpdated = 0;
             var gamesCompleted = 0;
             var gamesSkipped = 0;
 
             // Step 3: Process each game
-            foreach (var game in recentGames)
+            foreach (var apiGame in apiGames)
             {
                 try
                 {
-                    // Skip games that are already marked as complete
-                    // (This is an optimization - we could still update them, but typically final scores don't change)
-                    if (game.IsComplete)
+                    // Step 4: Validate API data
+                    if (string.IsNullOrWhiteSpace(apiGame.Id))
+                    {
+                        logger.LogWarning("Skipping game with missing ID");
+                        continue;
+                    }
+
+                    // Step 5: Check if game already exists
+                    var existingGame = await moneyballRepository.Games.GetGameByExternalIdAsync(apiGame.Id, nbaSport.SportId);
+
+                    // Skip games that don't exist
+                    if (existingGame == null)
                     {
                         gamesSkipped++;
                         continue;
                     }
 
-                    var nbaGame = apiGames.FirstOrDefault(g => g.Id == game.ExternalGameId);
-
-                    if (nbaGame == null)
+                    // Skip games that are already marked as complete
+                    // (This is an optimization - we could still update them, but typically final scores don't change)
+                    if (existingGame.IsComplete)
                     {
                         gamesSkipped++;
                         continue;
@@ -720,59 +742,59 @@ public class DataIngestionService(
                     var hasChanges = false;
 
                     // Update home score (acceptance criteria: HomeScore populated)
-                    var homePoints = nbaGame.HomePoints;
-                    if (game.HomeScore != homePoints)
+                    var homePoints = apiGame.HomePoints;
+                    if (existingGame.HomeScore != homePoints)
                     {
                         logger.LogDebug(
-                            "Updating home score for game {ExternalGameId}: {OldScore} → {NewScore}",
-                            game.ExternalGameId, game.HomeScore, homePoints);
-                        game.HomeScore = homePoints;
+                            "Updating home score for existingGame {ExternalGameId}: {OldScore} → {NewScore}",
+                            existingGame.ExternalGameId, existingGame.HomeScore, homePoints);
+                        existingGame.HomeScore = homePoints;
                         hasChanges = true;
                     }
 
                     // Update away score (acceptance criteria: AwayScore populated)
-                    var awayPoints = nbaGame.AwayPoints;
-                    if (game.AwayScore != awayPoints)
+                    var awayPoints = apiGame.AwayPoints;
+                    if (existingGame.AwayScore != awayPoints)
                     {
                         logger.LogDebug(
-                            "Updating away score for game {ExternalGameId}: {OldScore} → {NewScore}",
-                            game.ExternalGameId, game.AwayScore, awayPoints);
-                        game.AwayScore = awayPoints;
+                            "Updating away score for existingGame {ExternalGameId}: {OldScore} → {NewScore}",
+                            existingGame.ExternalGameId, existingGame.AwayScore, awayPoints);
+                        existingGame.AwayScore = awayPoints;
                         hasChanges = true;
                     }
 
                     // Determine if game is complete based on status
                     // SportRadar statuses: "scheduled", "inprogress", "halftime", "closed", "complete"
-                    var isGameComplete = IsGameComplete(nbaGame.Status);
+                    var isGameComplete = IsGameComplete(apiGame.Status);
 
                     // Flip IsComplete flag (acceptance criteria: IsComplete flipped)
-                    if (!game.IsComplete && isGameComplete)
+                    if (!existingGame.IsComplete && isGameComplete)
                     {
                         logger.LogInformation(
                             "Marking game {ExternalGameId} as complete. Final score: {Home} {HomeScore} - {Away} {AwayScore}",
-                            game.ExternalGameId,
-                            nbaGame.Home.Name,
-                            game.HomeScore,
-                            nbaGame.Away.Name,
-                            game.AwayScore);
+                            existingGame.ExternalGameId,
+                            apiGame.Home.Name,
+                            existingGame.HomeScore,
+                            apiGame.Away.Name,
+                            existingGame.AwayScore);
 
-                        game.IsComplete = true;
-                        game.Status = GameStatus.Final;
+                        existingGame.IsComplete = true;
+                        existingGame.Status = GameStatus.Final;
                         gamesCompleted++;
                         hasChanges = true;
                     }
-                    else if (game.Status != MapGameStatus(nbaGame.Status))
+                    else if (existingGame.Status != MapGameStatus(apiGame.Status))
                     {
                         // Update status even if not complete (e.g., scheduled → in progress)
-                        game.Status = MapGameStatus(nbaGame.Status);
+                        existingGame.Status = MapGameStatus(apiGame.Status);
                         hasChanges = true;
                     }
 
                     // Save changes if any updates were made
                     if (hasChanges)
                     {
-                        game.UpdatedAt = DateTime.UtcNow;
-                        await moneyballRepository.Games.UpdateAsync(game);
+                        existingGame.UpdatedAt = DateTime.UtcNow;
+                        await moneyballRepository.Games.UpdateAsync(existingGame);
                         gamesUpdated++;
                     }
                     else
@@ -784,7 +806,7 @@ public class DataIngestionService(
                 {
                     logger.LogWarning(ex,
                         "Error updating results for game {ExternalGameId}. Continuing with next game.",
-                        game.ExternalGameId);
+                        apiGame.Id);
                     gamesSkipped++;
                 }
             }
@@ -795,7 +817,7 @@ public class DataIngestionService(
             // Step 6: Log final counts (acceptance criteria: count logged)
             logger.LogInformation(
                 "Game results update complete. Updated: {Updated}, Completed: {Completed}, Changed: {Changed}, Skipped: {Skipped}, Total processed: {Total}",
-                gamesUpdated, gamesCompleted, changeCount, gamesSkipped, recentGames.Count);
+                gamesUpdated, gamesCompleted, changeCount, gamesSkipped, apiGames.Count);
         }
         catch (Exception ex)
         {

@@ -13,21 +13,23 @@ public class DataIngestionOrchestrator(
 
         try
         {
-            // Step 1: Ingest teams (if not already done)
             if (sportId == 1) // NBA
             {
+                // Step 1: Ingest teams (if not already done)
                 logger.LogInformation("Ingesting NBA teams...");
                 await dataIngestionService.IngestNBATeamsAsync();
 
                 // Step 2: Ingest schedule for next 14 days
                 logger.LogInformation("Ingesting NBA schedule...");
                 await dataIngestionService.IngestNBAScheduleAsync(
-                    DateTime.UtcNow.Date,
+                    DateTime.UtcNow.Date.AddDays(-1),
                     DateTime.UtcNow.Date.AddDays(14));
 
-                // Step 3: Ingest odds
+                // Step 3: Ingest odds for the last 48 hours
                 logger.LogInformation("Ingesting NBA odds...");
-                await dataIngestionService.IngestNBAOddsAsync("basketball_nba");
+                await dataIngestionService.IngestNBAOddsAsync(
+                    DateTime.UtcNow.AddHours(-48),
+                    DateTime.UtcNow.AddHours(1));
             }
             else if (sportId == 2) // NFL
             {
@@ -57,16 +59,23 @@ public class DataIngestionOrchestrator(
                 {
                     try
                     {
+                        // Step 1: Ingest schedule for next 14 days
                         logger.LogInformation("Updating NBA schedule...");
                         await dataIngestionService.IngestNBAScheduleAsync(
-                            DateTime.UtcNow.Date.AddDays(-1),
-                            DateTime.UtcNow.Date.AddDays(7));
-
+                            DateTime.UtcNow.AddDays(-1),
+                            DateTime.UtcNow.Date.AddDays(14));
+                        
+                        // Step 2: Ingest odds for the last 48 hours
                         logger.LogInformation("Updating NBA odds...");
-                        await dataIngestionService.IngestNBAOddsAsync("basketball_nba");
-
+                        await dataIngestionService.IngestNBAOddsAsync(
+                            DateTime.UtcNow.AddHours(-48),
+                            DateTime.UtcNow.AddHours(1));
+                        
+                        // Step 3: Update game results for the last 48 hours
                         logger.LogInformation("Updating NBA game results...");
-                        await dataIngestionService.UpdateNBAGameResultsAsync();
+                        await dataIngestionService.UpdateNBAGameResultsAsync(
+                            DateTime.UtcNow.AddHours(-48),
+                            DateTime.UtcNow.AddHours(1));
                     }
                     catch (Exception ex)
                     {

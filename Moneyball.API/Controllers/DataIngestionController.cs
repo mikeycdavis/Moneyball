@@ -76,17 +76,23 @@ public class DataIngestionController(
     }
 
     /// <summary>
-    /// Ingest NBA statistics for a game
+    /// Ingest NBA statistics for a date range
     /// </summary>
-    /// <param name="externalGameId">SportRadar game ID</param>
-    [HttpPost("nba/statistics/{externalGameId}")]
-    public async Task<IActionResult> IngestNBAGameStatisticsAsync(string externalGameId)
+    /// <param name="startDate">Start date (YYYY-MM-DD)</param>
+    /// <param name="endDate">End date (YYYY-MM-DD)</param>
+    [HttpPost("nba/statistics")]
+    public async Task<IActionResult> IngestNBAGameStatisticsAsync(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null)
     {
         try
         {
-            logger.LogInformation("Manual statistics ingestion triggered for {GameId}", externalGameId);
-            await dataIngestionService.IngestNBAGameStatisticsAsync(externalGameId);
-            return Ok(new { message = $"Statistics ingestion completed for {externalGameId}" });
+            var start = startDate ?? DateTime.UtcNow.Date;
+            var end = endDate ?? DateTime.UtcNow.Date.AddDays(7);
+
+            logger.LogInformation("Manual statistics ingestion triggered from {Start} to {End}", start, end);
+            await dataIngestionService.IngestNBAGameStatisticsAsync(start, end);
+            return Ok(new { message = $"Statistics ingestion completed from {start:yyyy-MM-dd} to {end:yyyy-MM-dd}" });
         }
         catch (Exception ex)
         {
@@ -96,17 +102,23 @@ public class DataIngestionController(
     }
 
     /// <summary>
-    /// Ingest NBA odds for a game
+    /// Ingest NBA odds for a date range
     /// </summary>
-    /// <param name="externalGameId">SportRadar game ID</param>
-    [HttpPost("nba/odds/{externalGameId}")]
-    public async Task<IActionResult> IngestNBAOdds(string externalGameId)
+    /// <param name="startDate">Start date (YYYY-MM-DD)</param>
+    /// <param name="endDate">End date (YYYY-MM-DD)</param>
+    [HttpPost("nba/odds")]
+    public async Task<IActionResult> IngestNBAOdds(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null)
     {
         try
         {
-            logger.LogInformation("Manual odds ingestion triggered for {GameId}", externalGameId);
-            await dataIngestionService.IngestNBAOddsAsync(externalGameId);
-            return Ok(new { message = $"Odds ingestion completed for {externalGameId}" });
+            var start = startDate ?? DateTime.UtcNow.AddHours(-48);
+            var end = endDate ?? DateTime.UtcNow.AddHours(1);
+
+            logger.LogInformation("Manual odds ingestion triggered from {Start} to {End}", start, end);
+            await dataIngestionService.IngestNBAOddsAsync(start, end);
+            return Ok(new { message = $"Odds ingestion completed from {start:yyyy-MM-dd} to {end:yyyy-MM-dd}" });
         }
         catch (Exception ex)
         {
@@ -155,18 +167,22 @@ public class DataIngestionController(
     }
 
     /// <summary>
-    /// Update game results for recent games
+    /// Update game results for a date range
     /// </summary>
-    [HttpPost("results")]
-    public async Task<IActionResult> UpdateNBAGameResults()
+    /// <param name="startDate">Start date (YYYY-MM-DD)</param>
+    /// <param name="endDate">End date (YYYY-MM-DD)</param>
+    [HttpPost("nba/results")]
+    public async Task<IActionResult> UpdateNBAGameResults(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null)
     {
         try
         {
-            var start = DateTime.UtcNow.AddHours(-48);
-            var end = DateTime.UtcNow.AddHours(1);
+            var start = startDate ?? DateTime.UtcNow.AddHours(-48);
+            var end = endDate ?? DateTime.UtcNow.AddHours(1);
 
             logger.LogInformation("Manual game results update triggered from {Start} to {End}", start, end);
-            await dataIngestionService.UpdateNBAGameResultsAsync();
+            await dataIngestionService.UpdateNBAGameResultsAsync(start, end);
             return Ok(new { message = $"Game results updated for sport from {start:yyyy-MM-dd} to {end:yyyy-MM-dd}" });
         }
         catch (Exception ex)

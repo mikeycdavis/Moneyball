@@ -4,9 +4,9 @@
     {
         Task IngestNBAScheduleAsync(DateTime startDate, DateTime endDate);
         Task IngestNBATeamsAsync();
-        Task IngestNBAGameStatisticsAsync(string externalGameId);
-        Task IngestNBAOddsAsync(string externalGameId);
+        Task IngestNBAGameStatisticsAsync(DateTime startDate, DateTime endDate);
+        Task IngestNBAOddsAsync(DateTime startDate, DateTime endDate);
         Task IngestOddsAsync(string sport);
-        Task UpdateNBAGameResultsAsync();
+        Task UpdateNBAGameResultsAsync(DateTime startDate, DateTime endDate);
     }
 }
