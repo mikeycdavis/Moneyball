@@ -1,6 +1,9 @@
-﻿using Moneyball.Core.Interfaces.ExternalServices;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Moneyball.Core.Interfaces.ExternalServices;
 
-namespace Moneyball.API.Background_Services;
+namespace Moneyball.Infrastructure.ExternalServices;
 
 public class DataIngestionBackgroundService(
     IServiceProvider serviceProvider,
