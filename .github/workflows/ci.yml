@@ -24,11 +24,10 @@ jobs:
 
     steps:
       - name: Calculate Thresholds
-      run: |
-        # Explicitly set scale=0 to ensure truncation to integer
-        WARNING=$(echo "scale=0; ($COVERAGE_THRESHOLD * 0.85) / 1" | bc)
-        
-        echo "COVERAGE_THRESHOLD_WARNING=$WARNING" >> $GITHUB_ENV
+        run: |
+          # Explicitly set scale=0 to ensure truncation to integer
+          WARNING=$(echo "scale=0; ($COVERAGE_THRESHOLD * 0.85) / 1" | bc)
+          echo "COVERAGE_THRESHOLD_WARNING=$WARNING" >> $GITHUB_ENV
         
       - name: Checkout repository
         uses: actions/checkout@v4
