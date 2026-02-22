@@ -92,7 +92,11 @@ public class GamesController(IMoneyballRepository moneyballRepository, ILogger<G
                 Odds = game.Odds.Select(o => new
                 {
                     o.BookmakerName,
-                    Moneyline = new { Home = o.HomeMoneyline, Away = o.AwayMoneyline },
+                    Moneyline = new
+                    {
+                        Home = o.HomeMoneyline,
+                        Away = o.AwayMoneyline
+                    },
                     Spread = new
                     {
                         Home = o.HomeSpread,
