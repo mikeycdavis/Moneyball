@@ -199,7 +199,11 @@ public class GamesController(IMoneyballRepository moneyballRepository, ILogger<G
                 Game = $"{o.Game.AwayTeam.Name} @ {o.Game.HomeTeam.Name}",
                 o.Game.GameDate,
                 o.BookmakerName,
-                Moneyline = new { Home = o.HomeMoneyline, Away = o.AwayMoneyline },
+                Moneyline = new
+                {
+                    Home = o.HomeMoneyline,
+                    Away = o.AwayMoneyline
+                },
                 Spread = new
                 {
                     Home = o.HomeSpread,
