@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moneyball.API.Controllers;
+using Moneyball.Core.DTOs;
 using Moneyball.Core.Entities;
 using Moneyball.Core.Enums;
 using Moneyball.Core.Interfaces.Repositories;
@@ -278,11 +279,10 @@ public class GamesControllerTests
 
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        var value = ok.Value as GameResponse;
+        value.Should().NotBeNull();
 
-        // Use dynamic to navigate anonymous type properties at runtime
-        dynamic value = ok.Value!;
-
-        ((object)value.HomeTeam).Should().BeEquivalentTo(new
+        value.HomeTeam.Should().BeEquivalentTo(new TeamResponse
         {
             TeamId = 10,
             Name = "Los Angeles Lakers",
@@ -290,7 +290,7 @@ public class GamesControllerTests
             City = "Los Angeles"
         });
 
-        ((object)value.AwayTeam).Should().BeEquivalentTo(new
+        value.AwayTeam.Should().BeEquivalentTo(new TeamResponse
         {
             TeamId = 11,
             Name = "Boston Celtics",
@@ -318,28 +318,34 @@ public class GamesControllerTests
 
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        dynamic value = ok.Value!;
+        var value = ok.Value as GameResponse;
+        value.Should().NotBeNull();
 
-        var oddsItems = ((IEnumerable<object>)value.Odds).ToList();
+        var oddsItems = value.Odds.ToList();
         oddsItems.Should().HaveCount(1);
 
-        oddsItems[0].Should().BeEquivalentTo(new
+        oddsItems[0].Should().BeEquivalentTo(new OddsResponse
         {
             BookmakerName = "DraftKings",
-            Moneyline = new { Home = (int?)-150, Away = (int?)130 },
-            Spread = new
+            Moneyline = new MoneylineResponse
             {
-                Home = (decimal?)-5.5m,
-                HomeOdds = (int?)-110,
-                Away = (decimal?)5.5m,
-                AwayOdds = (int?)-110
+                Home = -150,
+                Away = 130
             },
-            Total = new
+            Spread = new SpreadResponse
             {
-                Line = (decimal?)220.5m,
-                OverOdds = (int?)-110,
-                UnderOdds = (int?)-110
-            }
+                Home = -5.5m,
+                HomeOdds = -110,
+                Away = 5.5m,
+                AwayOdds = -110
+            },
+            Total = new TotalResponse
+            {
+                Line = 220.5m,
+                Over = -110,
+                Under = -110
+            },
+            RecordedAt = game.Odds.Single().RecordedAt,
         }, options => options.ExcludingMissingMembers());
     }
 
@@ -389,25 +395,37 @@ public class GamesControllerTests
 
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        dynamic value = ok.Value!;
+        var value = ok.Value as GameResponse;
+        value.Should().NotBeNull();
 
-        var stats = ((IEnumerable<object>)value.Statistics).ToList();
+        var stats = value.Statistics.ToList();
         stats.Should().HaveCount(2);
 
         // IsHomeTeam = true should project as "Home"
-        stats[0].Should().BeEquivalentTo(new
+        stats[0].Should().BeEquivalentTo(new StatisticResponse
         {
-            Team = "Home",
+            HomeOrAway = "Home",
             Points = 110,
+            FieldGoalsMade = 42,
+            FieldGoalsAttempted = 88,
+            FieldGoalPercentage = 47.7m,
+            ThreePointsMade = 12,
             Assists = 25,
-            Rebounds = 44
+            Rebounds = 44,
+            Turnovers = 12
         }, options => options.ExcludingMissingMembers());
 
         // IsHomeTeam = false should project as "Away"
-        stats[1].Should().BeEquivalentTo(new
+        stats[1].Should().BeEquivalentTo(new StatisticResponse
         {
-            Team = "Away",
+            HomeOrAway = "Away",
             Points = 105,
+            FieldGoalsMade = 40,
+            FieldGoalsAttempted = 90,
+            FieldGoalPercentage = 44.4m,
+            ThreePointsMade = 10,
+            Assists = 22,
+            Rebounds = 40,
             Turnovers = 15
         }, options => options.ExcludingMissingMembers());
     }
@@ -443,19 +461,21 @@ public class GamesControllerTests
 
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        dynamic value = ok.Value!;
+        var value = ok.Value as GameResponse;
+        value.Should().NotBeNull();
 
-        var predictions = ((IEnumerable<object>)value.Predictions).ToList();
+        var predictions = value.Predictions.ToList();
         predictions.Should().HaveCount(1);
 
-        predictions[0].Should().BeEquivalentTo(new
+        predictions[0].Should().BeEquivalentTo(new PredictionResponse
         {
             Model = "XGBoost",
             Version = "2.1",
             PredictedHomeWinProbability = 0.62m,
             PredictedAwayWinProbability = 0.38m,
             Edge = 0.05m,
-            Confidence = 0.75m
+            Confidence = 0.75m,
+            CreatedAt = game.Predictions.Single().CreatedAt
         }, options => options.ExcludingMissingMembers());
     }
 

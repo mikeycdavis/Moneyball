@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Moneyball.Core.DTOs;
 using Moneyball.Core.Entities;
 using Moneyball.Core.Interfaces.Repositories;
 using Swashbuckle.AspNetCore.Annotations;
@@ -63,76 +64,76 @@ public class GamesController(IMoneyballRepository moneyballRepository, ILogger<G
                 return NotFound(new { error = "Game not found" });
             }
 
-            var result = new
+            var result = new GameResponse
             {
-                game.GameId,
-                game.ExternalGameId,
+                GameId = game.GameId,
+                ExternalGameId = game.ExternalGameId,
                 Sport = game.Sport.Name,
-                HomeTeam = new
+                HomeTeam = new TeamResponse
                 {
-                    game.HomeTeam.TeamId,
-                    game.HomeTeam.Name,
-                    game.HomeTeam.Abbreviation,
-                    game.HomeTeam.City
+                    TeamId = game.HomeTeam.TeamId,
+                    Name = game.HomeTeam.Name,
+                    Abbreviation = game.HomeTeam.Abbreviation,
+                    City = game.HomeTeam.City
                 },
-                AwayTeam = new
+                AwayTeam = new TeamResponse
                 {
-                    game.AwayTeam.TeamId,
-                    game.AwayTeam.Name,
-                    game.AwayTeam.Abbreviation,
-                    game.AwayTeam.City
+                    TeamId = game.AwayTeam.TeamId,
+                    Name = game.AwayTeam.Name,
+                    Abbreviation = game.AwayTeam.Abbreviation,
+                    City = game.AwayTeam.City
                 },
-                game.GameDate,
-                game.Status,
-                Score = new
+                GameDate = game.GameDate,
+                Status = game.Status,
+                Score = new ScoreResponse
                 {
                     Home = game.HomeScore,
                     Away = game.AwayScore
                 },
-                Odds = game.Odds.Select(o => new
+                Odds = game.Odds.Select(o => new OddsResponse
                 {
-                    o.BookmakerName,
-                    Moneyline = new
+                    BookmakerName = o.BookmakerName,
+                    Moneyline = new MoneylineResponse
                     {
-                        Home = o.HomeMoneyline,
+                        Home = o.HomeMoneyline, 
                         Away = o.AwayMoneyline
                     },
-                    Spread = new
+                    Spread = new SpreadResponse
                     {
                         Home = o.HomeSpread,
                         HomeOdds = o.HomeSpreadOdds,
                         Away = o.AwaySpread,
                         AwayOdds = o.AwaySpreadOdds
                     },
-                    Total = new
+                    Total = new TotalResponse
                     {
                         Line = o.OverUnder,
-                        o.OverOdds,
-                        o.UnderOdds
+                        Over = o.OverOdds,
+                        Under = o.UnderOdds
                     },
-                    o.RecordedAt
+                    RecordedAt = o.RecordedAt
                 }),
-                Statistics = game.TeamStatistics.Select(s => new
+                Statistics = game.TeamStatistics.Select(s => new StatisticResponse
                 {
-                    Team = s.IsHomeTeam ? "Home" : "Away",
-                    s.Points,
-                    s.FieldGoalsMade,
-                    s.FieldGoalsAttempted,
-                    s.FieldGoalPercentage,
-                    s.ThreePointsMade,
-                    s.Assists,
-                    s.Rebounds,
-                    s.Turnovers
+                    HomeOrAway = s.IsHomeTeam ? "Home" : "Away",
+                    Points = s.Points,
+                    FieldGoalsMade = s.FieldGoalsMade,
+                    FieldGoalsAttempted = s.FieldGoalsAttempted,
+                    FieldGoalPercentage = s.FieldGoalPercentage,
+                    ThreePointsMade = s.ThreePointsMade,
+                    Assists = s.Assists,
+                    Rebounds = s.Rebounds,
+                    Turnovers = s.Turnovers
                 }),
-                Predictions = game.Predictions.Select(p => new
+                Predictions = game.Predictions.Select(p => new PredictionResponse
                 {
                     Model = p.Model.Name,
-                    p.Model.Version,
-                    p.PredictedHomeWinProbability,
-                    p.PredictedAwayWinProbability,
-                    p.Edge,
-                    p.Confidence,
-                    p.CreatedAt
+                    Version = p.Model.Version,
+                    PredictedHomeWinProbability = p.PredictedHomeWinProbability,
+                    PredictedAwayWinProbability = p.PredictedAwayWinProbability,
+                    Edge = p.Edge,
+                    Confidence = p.Confidence,
+                    CreatedAt = p.CreatedAt
                 })
             };
 
