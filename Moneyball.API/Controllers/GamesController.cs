@@ -64,19 +64,19 @@ public class GamesController(IMoneyballRepository moneyballRepository, ILogger<G
                 return NotFound(new { error = "Game not found" });
             }
 
-            var result = new GameResponse
+            var result = new GameResult
             {
                 GameId = game.GameId,
                 ExternalGameId = game.ExternalGameId,
                 Sport = game.Sport.Name,
-                HomeTeam = new TeamResponse
+                HomeTeam = new TeamResult
                 {
                     TeamId = game.HomeTeam.TeamId,
                     Name = game.HomeTeam.Name,
                     Abbreviation = game.HomeTeam.Abbreviation,
                     City = game.HomeTeam.City
                 },
-                AwayTeam = new TeamResponse
+                AwayTeam = new TeamResult
                 {
                     TeamId = game.AwayTeam.TeamId,
                     Name = game.AwayTeam.Name,
@@ -85,27 +85,27 @@ public class GamesController(IMoneyballRepository moneyballRepository, ILogger<G
                 },
                 GameDate = game.GameDate,
                 Status = game.Status,
-                Score = new ScoreResponse
+                Score = new ScoreResult
                 {
                     Home = game.HomeScore,
                     Away = game.AwayScore
                 },
-                Odds = game.Odds.Select(o => new OddsResponse
+                Odds = game.Odds.Select(o => new OddsResult
                 {
                     BookmakerName = o.BookmakerName,
-                    Moneyline = new MoneylineResponse
+                    Moneyline = new MoneylineResult
                     {
-                        Home = o.HomeMoneyline, 
+                        Home = o.HomeMoneyline,
                         Away = o.AwayMoneyline
                     },
-                    Spread = new SpreadResponse
+                    Spread = new SpreadResult
                     {
                         Home = o.HomeSpread,
                         HomeOdds = o.HomeSpreadOdds,
                         Away = o.AwaySpread,
                         AwayOdds = o.AwaySpreadOdds
                     },
-                    Total = new TotalResponse
+                    Total = new TotalResult
                     {
                         Line = o.OverUnder,
                         Over = o.OverOdds,
@@ -113,7 +113,7 @@ public class GamesController(IMoneyballRepository moneyballRepository, ILogger<G
                     },
                     RecordedAt = o.RecordedAt
                 }),
-                Statistics = game.TeamStatistics.Select(s => new StatisticResponse
+                Statistics = game.TeamStatistics.Select(s => new StatisticResult
                 {
                     HomeOrAway = s.IsHomeTeam ? "Home" : "Away",
                     Points = s.Points,
@@ -125,15 +125,15 @@ public class GamesController(IMoneyballRepository moneyballRepository, ILogger<G
                     Rebounds = s.Rebounds,
                     Turnovers = s.Turnovers
                 }),
-                Predictions = game.Predictions.Select(p => new PredictionResponse
+                Predictions = game.Predictions.Select(p => new PredictionResult
                 {
                     Model = p.Model.Name,
                     Version = p.Model.Version,
-                    PredictedHomeWinProbability = p.PredictedHomeWinProbability,
-                    PredictedAwayWinProbability = p.PredictedAwayWinProbability,
+                    HomeWinProbability = p.PredictedHomeWinProbability,
+                    AwayWinProbability = p.PredictedAwayWinProbability,
                     Edge = p.Edge,
                     Confidence = p.Confidence,
-                    CreatedAt = p.CreatedAt
+                    PredictedAt = p.CreatedAt
                 })
             };
 

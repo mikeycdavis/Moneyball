@@ -2,22 +2,22 @@
 
 namespace Moneyball.Core.DTOs
 {
-    public class GameResponse
+    public class GameResult
     {
         public int GameId { get; set; }
         public string? ExternalGameId { get; set; }
         public string Sport { get; set; } = string.Empty;
-        public TeamResponse HomeTeam { get; set; } = new();
-        public TeamResponse AwayTeam { get; set; } = new();
+        public TeamResult HomeTeam { get; set; } = new();
+        public TeamResult AwayTeam { get; set; } = new();
         public DateTime GameDate { get; set; }
         public GameStatus Status { get; set; }
-        public ScoreResponse Score { get; set; } = new();
-        public IEnumerable<OddsResponse> Odds { get; set; } = [];
-        public IEnumerable<StatisticResponse> Statistics { get; set; } = [];
-        public IEnumerable<PredictionResponse> Predictions { get; set; } = [];
+        public ScoreResult Score { get; set; } = new();
+        public IEnumerable<OddsResult> Odds { get; set; } = [];
+        public IEnumerable<StatisticResult> Statistics { get; set; } = [];
+        public IEnumerable<PredictionResult> Predictions { get; set; } = [];
     }
 
-    public class TeamResponse
+    public class TeamResult
     {
         public int TeamId { get; set; }
         public string Name { get; set; } = string.Empty;
@@ -25,28 +25,28 @@ namespace Moneyball.Core.DTOs
         public string? City { get; set; }
     }
 
-    public class ScoreResponse
+    public class ScoreResult
     {
         public int? Home { get; set; }
         public int? Away { get; set; }
     }
 
-    public class OddsResponse
+    public class OddsResult
     {
         public string BookmakerName { get; set; } = string.Empty;
-        public MoneylineResponse Moneyline { get; set; } = new();
-        public SpreadResponse Spread { get; set; } = new();
-        public TotalResponse Total { get; set; } = new();
+        public MoneylineResult Moneyline { get; set; } = new();
+        public SpreadResult Spread { get; set; } = new();
+        public TotalResult Total { get; set; } = new();
         public DateTime RecordedAt { get; set; }
     }
 
-    public class MoneylineResponse
+    public class MoneylineResult
     {
         public decimal? Home { get; set; }
         public decimal? Away { get; set; }
     }
 
-    public class SpreadResponse
+    public class SpreadResult
     {
         public decimal? Home { get; set; }
         public decimal? HomeOdds { get; set; }
@@ -54,14 +54,14 @@ namespace Moneyball.Core.DTOs
         public decimal? AwayOdds { get; set; }
     }
 
-    public class TotalResponse
+    public class TotalResult
     {
         public decimal? Line { get; set; }
         public decimal? Over { get; set; }
         public decimal? Under { get; set; }
     }
 
-    public class StatisticResponse
+    public class StatisticResult
     {
         public string HomeOrAway { get; set; } = string.Empty;
         public int? Points { get; set; }
@@ -72,16 +72,5 @@ namespace Moneyball.Core.DTOs
         public int? Assists { get; set; }
         public int? Rebounds { get; set; }
         public int? Turnovers { get; set; }
-    }
-
-    public class PredictionResponse
-    {
-        public string Model { get; set; } = string.Empty;
-        public string Version { get; set; } = string.Empty;
-        public decimal PredictedHomeWinProbability { get; set; }
-        public decimal PredictedAwayWinProbability { get; set; }
-        public decimal? Edge { get; set; }
-        public decimal? Confidence { get; set; }
-        public DateTime CreatedAt { get; set; }
     }
 }

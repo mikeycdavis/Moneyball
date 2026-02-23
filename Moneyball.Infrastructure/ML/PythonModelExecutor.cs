@@ -1,36 +1,75 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Moneyball.Core.DTOs;
 using Moneyball.Core.Entities;
+using Moneyball.Core.Enums;
+using Moneyball.Core.Exceptions;
+using Moneyball.Core.Interfaces.ML;
 using System.Net.Http.Json;
+using System.Text.Json;
 
-namespace Moneyball.Infrastructure.ML
+namespace Moneyball.Infrastructure.ML;
+
+public class PythonModelExecutor(HttpClient httpClient, IConfiguration config) : IModelExecutor
 {
-    //public class PythonModelExecutor : IModelExecutor
-    //{
-    //    private readonly HttpClient _httpClient;
-    //    private readonly string _pythonServiceUrl;
+    private readonly HttpClient _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+    private readonly string _pythonServiceUrl = config["PythonMLService:Url"]
+                                                ?? throw new InvalidOperationException("PythonMLService:Url configuration is missing.");
 
-    //    public PythonModelExecutor(HttpClient httpClient, IConfiguration config)
-    //    {
-    //        _httpClient = httpClient;
-    //        _pythonServiceUrl = config["PythonMLService:Url"];
-    //    }
+    public ModelType SupportedModelType => ModelType.Python;
 
-    //    public async Task<PredictionResult> ExecuteAsync(
-    //        Model model,
-    //        Dictionary<string, object> features)
-    //    {
-    //        var request = new
-    //        {
-    //            model_name = $"{model.Name}_{model.Version}",
-    //            features = features
-    //        };
+    public bool CanExecute(Model model) => model.ModelType == SupportedModelType;
 
-    //        var response = await _httpClient.PostAsJsonAsync(
-    //            $"{_pythonServiceUrl}/predict", request);
+    public async Task<PredictionResult> ExecuteAsync(
+        Model model,
+        Dictionary<string, object> features)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(features);
 
-    //        response.EnsureSuccessStatusCode();
+        var modelName = $"{model.Name}_{model.Version}";
+        var request = new
+        {
+            model_name = modelName,
+            features
+        };
 
-    //        return await response.Content.ReadFromJsonAsync<PredictionResult>();
-    //    }
-    //}
+        HttpResponseMessage response;
+
+        try
+        {
+            response = await _httpClient.PostAsJsonAsync($"{_pythonServiceUrl}/predict", request);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ModelExecutionException(
+                $"Failed to reach Python ML service for model '{modelName}'. " +
+                $"Endpoint: {_pythonServiceUrl}/predict", ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new ModelExecutionException(
+                $"Request timed out while executing model '{modelName}'.", ex);
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new ModelExecutionException(
+                $"Python ML service returned {(int)response.StatusCode} ({response.ReasonPhrase}) " +
+                $"for model '{modelName}'. Response body: {body}");
+        }
+
+        try
+        {
+            var result = await response.Content.ReadFromJsonAsync<PredictionResult>();
+            return result ?? throw new ModelExecutionException(
+                $"Python ML service returned an empty response for model '{modelName}'.");
+        }
+        catch (JsonException ex)
+        {
+            throw new ModelExecutionException(
+                $"Failed to deserialize PredictionResult from Python ML service " +
+                $"for model '{modelName}'.", ex);
+        }
+    }
 }

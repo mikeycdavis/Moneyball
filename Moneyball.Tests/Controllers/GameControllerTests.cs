@@ -279,10 +279,10 @@ public class GamesControllerTests
 
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        var value = ok.Value as GameResponse;
+        var value = ok.Value as GameResult;
         value.Should().NotBeNull();
 
-        value.HomeTeam.Should().BeEquivalentTo(new TeamResponse
+        value.HomeTeam.Should().BeEquivalentTo(new TeamResult
         {
             TeamId = 10,
             Name = "Los Angeles Lakers",
@@ -290,7 +290,7 @@ public class GamesControllerTests
             City = "Los Angeles"
         });
 
-        value.AwayTeam.Should().BeEquivalentTo(new TeamResponse
+        value.AwayTeam.Should().BeEquivalentTo(new TeamResult
         {
             TeamId = 11,
             Name = "Boston Celtics",
@@ -318,28 +318,28 @@ public class GamesControllerTests
 
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        var value = ok.Value as GameResponse;
+        var value = ok.Value as GameResult;
         value.Should().NotBeNull();
 
         var oddsItems = value.Odds.ToList();
         oddsItems.Should().HaveCount(1);
 
-        oddsItems[0].Should().BeEquivalentTo(new OddsResponse
+        oddsItems[0].Should().BeEquivalentTo(new OddsResult
         {
             BookmakerName = "DraftKings",
-            Moneyline = new MoneylineResponse
+            Moneyline = new MoneylineResult
             {
                 Home = -150,
                 Away = 130
             },
-            Spread = new SpreadResponse
+            Spread = new SpreadResult
             {
                 Home = -5.5m,
                 HomeOdds = -110,
                 Away = 5.5m,
                 AwayOdds = -110
             },
-            Total = new TotalResponse
+            Total = new TotalResult
             {
                 Line = 220.5m,
                 Over = -110,
@@ -395,14 +395,14 @@ public class GamesControllerTests
 
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        var value = ok.Value as GameResponse;
+        var value = ok.Value as GameResult;
         value.Should().NotBeNull();
 
         var stats = value.Statistics.ToList();
         stats.Should().HaveCount(2);
 
         // IsHomeTeam = true should project as "Home"
-        stats[0].Should().BeEquivalentTo(new StatisticResponse
+        stats[0].Should().BeEquivalentTo(new StatisticResult
         {
             HomeOrAway = "Home",
             Points = 110,
@@ -416,7 +416,7 @@ public class GamesControllerTests
         }, options => options.ExcludingMissingMembers());
 
         // IsHomeTeam = false should project as "Away"
-        stats[1].Should().BeEquivalentTo(new StatisticResponse
+        stats[1].Should().BeEquivalentTo(new StatisticResult
         {
             HomeOrAway = "Away",
             Points = 105,
@@ -461,21 +461,21 @@ public class GamesControllerTests
 
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        var value = ok.Value as GameResponse;
+        var value = ok.Value as GameResult;
         value.Should().NotBeNull();
 
         var predictions = value.Predictions.ToList();
         predictions.Should().HaveCount(1);
 
-        predictions[0].Should().BeEquivalentTo(new PredictionResponse
+        predictions[0].Should().BeEquivalentTo(new PredictionResult
         {
             Model = "XGBoost",
             Version = "2.1",
-            PredictedHomeWinProbability = 0.62m,
-            PredictedAwayWinProbability = 0.38m,
+            HomeWinProbability = 0.62m,
+            AwayWinProbability = 0.38m,
             Edge = 0.05m,
             Confidence = 0.75m,
-            CreatedAt = game.Predictions.Single().CreatedAt
+            PredictedAt = game.Predictions.Single().CreatedAt
         }, options => options.ExcludingMissingMembers());
     }
 
