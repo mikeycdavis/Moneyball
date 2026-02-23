@@ -80,7 +80,8 @@ jobs:
           reportgenerator \
             -reports:**/coverage.cobertura.xml \
             -targetdir:coverage-report \
-            -reporttypes:"HtmlInline_AzurePipelines;Cobertura;TextSummary"
+            -reporttypes:"HtmlInline_AzurePipelines;Cobertura;TextSummary" \
+            -filefilters:"-**/Moneyball.Infrastructure.Migrations/**;-**/Moneyball.API.Microsoft.AspNetCore.OpenApi.Generated/**;-**/Moneyball.API.System.Runtime.CompilerServices/**;-**/Moneyball.API.Program.cs;-**/Moneyball.API.ServiceCollectionExtensions.cs;-**/Moneyball.API.ServiceProviderExtensions.cs"
 
       - name: Show Coverage Summary
         run: cat coverage-report/Summary.txt
