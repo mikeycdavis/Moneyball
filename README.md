@@ -1,8 +1,8 @@
-<div>
+<div align="center">
   <h1>Moneyball</h1>
 
   <h3>Build Status</h3>
-  <p><strong>.NET</strong></p>
+  <strong>.NET</strong>
   <img src="https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/dot-net-ci.yml?branch=develop&label=develop" alt="Develop CI">
   &nbsp;
   <img src="https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/dot-net-ci.yml?branch=master&label=master" alt="Master CI">
