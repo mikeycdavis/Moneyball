@@ -1,4 +1,4 @@
-name: Moneyball DotNet CI
+name: Moneyball .NET CI
 
 on:
   push:
