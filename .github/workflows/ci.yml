@@ -63,6 +63,8 @@ jobs:
             --no-build \
             --collect:"XPlat Code Coverage" \
             --logger "trx;LogFileName=test-results.trx"
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByAttribute="GeneratedCodeAttribute,ExcludeFromCodeCoverageAttribute" \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude="[*]Microsoft.AspNetCore.OpenApi.*,[*]System.Runtime.CompilerServices.*,[Moneyball.API]Program"
 
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
