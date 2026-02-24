@@ -2,7 +2,7 @@
   <h1>Moneyball</h1>
   
   <!-- This "Master Table" creates the side-by-side layout -->
-  <table>
+  <table align="center" border="0">
     <tr>
       <th align="center"><h3>Build Status</h3></th>
       <th align="center"><h3>Code Coverage</h3></th>
@@ -10,7 +10,7 @@
     <tr>
       <!-- Column 1: Inner Build Table -->
       <td>
-        <table align="center">
+        <table align="center" border="0">
           <tr>
             <th align="center"><strong>.NET</strong></th>
             <th align="center"><strong>Python</strong></th>
@@ -27,7 +27,7 @@
       </td>
       <!-- Column 2: Inner Coverage Table -->
       <td>
-        <table align="center">
+        <table align="center" border="0">
           <tr>
             <th align="center"><strong>.NET</strong></th>
             <th align="center"><strong>Python</strong></th>
