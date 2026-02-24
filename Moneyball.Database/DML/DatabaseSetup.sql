@@ -150,10 +150,13 @@ BEGIN
         Name NVARCHAR(100) NOT NULL,
         Version NVARCHAR(50) NOT NULL,
         SportId INT NOT NULL FOREIGN KEY REFERENCES Sports(SportId),
-        ModelType INT NOT NULL, -- 0=Python, 1=MLNet, 2=External
+        Type INT NOT NULL, -- 0=Python, 1=MLNet, 2=External
         FilePath NVARCHAR(500),
         IsActive BIT DEFAULT 1,
         CreatedAt DATETIME2 DEFAULT GETUTCDATE(),
+        UpdatedAt DATETIME2 DEFAULT GETUTCDATE(),
+        TrainedAt DATETIME2 DEFAULT GETUTCDATE(),
+        TrainedBy NVARCHAR(50) NOT NULL,
         Metadata NVARCHAR(MAX),
         Description NVARCHAR(1000),
         CONSTRAINT UQ_Model_Name_Version UNIQUE (Name, Version)

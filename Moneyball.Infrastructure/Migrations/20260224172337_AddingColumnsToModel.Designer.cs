@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Moneyball.Infrastructure.Repositories;
 
@@ -11,9 +12,11 @@ using Moneyball.Infrastructure.Repositories;
 namespace Moneyball.Infrastructure.Migrations
 {
     [DbContext(typeof(MoneyballDbContext))]
-    partial class MoneyballDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260224172337_AddingColumnsToModel")]
+    partial class AddingColumnsToModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

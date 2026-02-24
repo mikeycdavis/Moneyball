@@ -27,24 +27,56 @@ public class Model
     /// </summary>
     public ModelType Type { get; set; }
 
+    /// <summary>
+    /// Version number for model tracking
+    /// </summary>
     [Required]
     [MaxLength(50)]
     public string Version { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Description of the model
+    /// </summary>
+    [MaxLength(1000)]
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// Sport id this model is trained for (foreign key to Sports table)
+    /// </summary>
     public int SportId { get; set; }
 
+    /// <summary>
+    /// File path to the trained model file
+    /// </summary>
     [MaxLength(500)]
     public string? FilePath { get; set; }
 
+    /// <summary>
+    /// Whether this model is currently active for predictions
+    /// </summary>
     public bool IsActive { get; set; } = true;
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
+    /// <summary>
+    /// Feature names expected by this model (JSON serialized array)
+    /// </summary>
     [Column(TypeName = "nvarchar(max)")]
     public string? Metadata { get; set; }
 
-    [MaxLength(1000)]
-    public string? Description { get; set; }
+    /// <summary>
+    /// When the model was trained
+    /// </summary>
+    public DateTime TrainedAt { get; set; }
+
+    /// <summary>
+    /// Who trained the model (user or system)
+    /// </summary>
+    public string TrainedBy { get; set; } = "System";
+
+    /// <summary>
+    /// Audit fields
+    /// </summary>
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
     [ForeignKey(nameof(SportId))]
