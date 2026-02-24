@@ -61,9 +61,10 @@ jobs:
           dotnet test Moneyball.Tests/Moneyball.Tests.csproj \
             --configuration Release \
             --no-build \
-            --collect:"XPlat Code Coverage" \
-            --logger "trx;LogFileName=test-results.trx"
-            
+            --logger "trx;LogFileName=test-results.trx" \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=cobertura
+
       - name: Debug Coverage
         run: |
           grep -R "Program.cs" TestResults || echo "Program.cs not found in coverage"
