@@ -1,7 +1,33 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "Moneyball.ML.Python"
+name = "moneyball-ml-python"
 version = "0.1.0"
+description = "Moneyball ML Python Service - Sports betting ML model server"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    {name = "Genu Inc", email = "genuinc@gmail.com"}
+]
+
+# Runtime dependencies
+dependencies = [
+    "flask>=3.0.0",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+]
+
+# Development/testing dependencies
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+]
+
+# Console script entry point - makes app.py:main() callable via command
+[project.scripts]
+moneyball-ml = "moneyball_ml_python.app:main"
+
+[tool.setuptools]
+packages = ["moneyball_ml_python"]
