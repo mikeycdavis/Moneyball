@@ -1,0 +1,20 @@
+<Project>
+
+  <PropertyGroup Condition="'$(CollectCoverage)' == 'true' OR '$(IsTestProject)' == 'true'">
+    
+    <!-- Exclude entire assembly -->
+    <Exclude>
+      [Microsoft.AspNetCore.OpenApi.Generated]*
+    </Exclude>
+
+    <!-- Exclude specific files -->
+    <ExcludeByFile>
+      **/Moneyball.Infrastructure.Migrations/*.cs;
+      **/Moneyball.API/Program.cs;
+      **/Moneyball.API/ServiceCollectionExtensions.cs;
+      **/Moneyball.API/ServiceProviderExtensions.cs
+    </ExcludeByFile>
+
+  </PropertyGroup>
+
+</Project>
