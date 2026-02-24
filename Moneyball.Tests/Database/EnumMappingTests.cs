@@ -8,7 +8,7 @@ namespace Moneyball.Tests.Database
 {
     public class EnumMappingTests
     {
-        [Fact]
+        [LocalFact]
         public async Task SportType_Enum_Matches_Database_SportIds()
         {
             var configuration = new ConfigurationBuilder()
