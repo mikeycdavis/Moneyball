@@ -63,11 +63,8 @@ jobs:
             --no-build \
             --logger "trx;LogFileName=test-results.trx" \
             /p:CollectCoverage=true \
+            /p:CoverletOutput=./TestResults/Coverage/ \
             /p:CoverletOutputFormat=cobertura
-
-      - name: Debug Coverage
-        run: |
-          grep -R "Program.cs" TestResults || echo "Program.cs not found in coverage"
 
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
