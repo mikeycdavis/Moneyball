@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Moneyball.Core.Enums;
 using Moneyball.Infrastructure.Repositories;
-using FluentAssertions;
 
 namespace Moneyball.Tests.Database
 {

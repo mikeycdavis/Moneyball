@@ -121,3 +121,32 @@ Thumbs.db
 
 # VS Code
 .vscode/
+
+# Python Runtime & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Python Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python Unit Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/ (Coverage reports)
+.tox/
+
+# Python Environment Secrets & Config
+.env
+.env.*
+instance/
+
+# Python Distribution & Packaging
+build/
+develop-eggs/
+dist/
+*.egg-info/

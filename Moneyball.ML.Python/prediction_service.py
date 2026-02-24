@@ -4,8 +4,6 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List
 
-app = Flask(__name__)
-
 # Model registry - loaded at startup
 models = {}
 
@@ -51,7 +49,3 @@ def prepare_features(features: Dict) -> np.ndarray:
         # ... many more features
     ]
     return np.array(feature_vector).reshape(1, -1)
-
-if __name__ == '__main__':
-    load_models()
-    app.run(host='localhost', port=5001)

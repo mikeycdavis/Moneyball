@@ -1,0 +1,8 @@
+# Web Framework
+Flask==3.0.3
+
+# Numerical Processing
+numpy==1.26.4
+
+# Testing Framework
+pytest==8.2.0
