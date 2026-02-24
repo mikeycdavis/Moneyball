@@ -20,7 +20,7 @@ jobs:
 
     env:
       DOTNET_VERSION: '10.0.x'
-      COVERAGE_THRESHOLD: 35
+      COVERAGE_THRESHOLD: 85
 
     steps:
       - name: Calculate Thresholds
