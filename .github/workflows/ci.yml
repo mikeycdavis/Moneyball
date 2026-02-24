@@ -62,9 +62,7 @@ jobs:
             --configuration Release \
             --no-build \
             --collect:"XPlat Code Coverage" \
-            --logger "trx;LogFileName=test-results.trx" \
-            /p:Exclude="[Microsoft.AspNetCore.OpenApi.Generated]*" \
-            /p:ExcludeByFile="**/Moneyball.Infrastructure.Migrations/*.cs;**/Moneyball.API/Program.cs;**/Moneyball.API/ServiceCollectionExtensions.cs;**/Moneyball.API/ServiceProviderExtensions.cs"
+            --logger "trx;LogFileName=test-results.trx"
 
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
