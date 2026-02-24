@@ -182,6 +182,8 @@ public class DataIngestionBackgroundServiceTests
     /// CancelAndStopAsync awaits ExecuteTask to full completion, which only happens
     /// after the stopping log is written — so the assertion below is always safe.
     /// </summary>
+    [Trait("Category", "Slow")]
+    [Trait("Type", "Integration")]
     [Fact]
     public async Task ExecuteAsync_OnCancellation_StopsGracefully()
     {
@@ -201,6 +203,8 @@ public class DataIngestionBackgroundServiceTests
     /// Tests that orchestrator is called after the startup delay.
     /// Cancels after first execution to avoid waiting out the 1-hour interval.
     /// </summary>
+    [Trait("Category", "Slow")]
+    [Trait("Type", "Integration")]
     [Fact(Timeout = 90_000)]
     public async Task ExecuteAsync_CallsOrchestratorOnSchedule()
     {
@@ -235,6 +239,8 @@ public class DataIngestionBackgroundServiceTests
     /// Tests that service creates and disposes scopes correctly.
     /// Verifies proper DI scope management per execution cycle.
     /// </summary>
+    [Trait("Category", "Slow")]
+    [Trait("Type", "Integration")]
     [Fact(Timeout = 90_000)]
     public async Task ExecuteAsync_CreatesAndDisposesScope()
     {
@@ -273,6 +279,8 @@ public class DataIngestionBackgroundServiceTests
     /// Tests that orchestrator errors are caught and logged.
     /// Verifies service continues after orchestrator failure.
     /// </summary>
+    [Trait("Category", "Slow")]
+    [Trait("Type", "Integration")]
     [Fact(Timeout = 90_000)]
     public async Task ExecuteAsync_OrchestratorError_LogsAndContinues()
     {
@@ -306,6 +314,8 @@ public class DataIngestionBackgroundServiceTests
     /// <summary>
     /// Tests that cycle completion is logged after successful execution.
     /// </summary>
+    [Trait("Category", "Slow")]
+    [Trait("Type", "Integration")]
     [Fact(Timeout = 90_000)]
     public async Task ExecuteAsync_SuccessfulCycle_LogsCompletion()
     {
@@ -341,6 +351,8 @@ public class DataIngestionBackgroundServiceTests
     /// CancelAndStopAsync already awaits ExecuteTask to full completion, which only
     /// happens after the stopping log is written, so no additional wait is needed.
     /// </summary>
+    [Trait("Category", "Slow")]
+    [Trait("Type", "Integration")]
     [Fact(Timeout = 90_000)]
     public async Task ExecuteAsync_CancellationDuringDelay_BreaksLoop()
     {
@@ -375,6 +387,8 @@ public class DataIngestionBackgroundServiceTests
     /// Note: running two full cycles would take over 2 hours (1-min startup +
     /// 1-hour interval). This test verifies at least one cycle completes cleanly.
     /// </summary>
+    [Trait("Category", "Slow")]
+    [Trait("Type", "Integration")]
     [Fact(Timeout = 90_000)]
     public async Task ExecuteAsync_MultipleExecutions_CallsOrchestratorMultipleTimes()
     {
@@ -414,6 +428,8 @@ public class DataIngestionBackgroundServiceTests
     /// Tests that service resolves orchestrator from scoped service provider.
     /// Verifies proper DI resolution from the child scope.
     /// </summary>
+    [Trait("Category", "Slow")]
+    [Trait("Type", "Integration")]
     [Fact(Timeout = 90_000)]
     public async Task ExecuteAsync_ResolvesOrchestratorFromScope()
     {
@@ -452,6 +468,8 @@ public class DataIngestionBackgroundServiceTests
     /// Tests that exception in scope disposal is handled.
     /// Verifies the orchestrator was at least invoked before the disposal error.
     /// </summary>
+    [Trait("Category", "Slow")]
+    [Trait("Type", "Integration")]
     [Fact(Timeout = 90_000)]
     public async Task ExecuteAsync_ScopeDisposalError_HandledGracefully()
     {

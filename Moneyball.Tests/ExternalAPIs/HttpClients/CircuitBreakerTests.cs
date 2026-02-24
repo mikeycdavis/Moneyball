@@ -15,6 +15,8 @@ namespace Moneyball.Tests.ExternalAPIs.HttpClients;
 
 public class CircuitBreakerTests
 {
+    [Trait("Category", "Slow")]
+    [Trait("Type", "Integration")]
     [Fact]
     public async Task SportsDataService_CircuitBreaker_Opens_AfterFiveConsecutiveFailures()
     {
@@ -42,6 +44,8 @@ public class CircuitBreakerTests
             .Should().ThrowAsync<BrokenCircuitException>("circuit should be open after 5 consecutive failures");
     }
 
+    [Trait("Category", "Slow")]
+    [Trait("Type", "Integration")]
     [Fact]
     public async Task OddsDataService_CircuitBreaker_Opens_AfterFiveConsecutiveFailures()
     {
@@ -66,6 +70,8 @@ public class CircuitBreakerTests
             .Should().ThrowAsync<BrokenCircuitException>("circuit should be open after 5 consecutive failures");
     }
 
+    [Trait("Category", "Slow")]
+    [Trait("Type", "Integration")]
     [Fact]
     public async Task SportsDataService_CircuitBreaker_Opens_On429s()
     {
@@ -88,6 +94,8 @@ public class CircuitBreakerTests
             .Should().ThrowAsync<BrokenCircuitException>("429 responses should count as failures and open the circuit");
     }
 
+    [Trait("Category", "Slow")]
+    [Trait("Type", "Integration")]
     [Fact]
     public async Task OddsDataService_CircuitBreaker_Opens_On429s()
     {
