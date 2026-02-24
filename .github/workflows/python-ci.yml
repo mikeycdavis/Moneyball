@@ -74,13 +74,11 @@ jobs:
       - name: Run tests with coverage
         working-directory: Moneyball.ML.Python
         run: |
-          cd Moneyball.ML.Python
           pytest \
             --junitxml=../test-results.xml \
             --cov=. \
             --cov-report=xml:../coverage.xml \
-            --cov-report=term \
-            --cov-fail-under=$COVERAGE_THRESHOLD
+            --cov-report=term
 
       - name: Publish test results
         uses: dorny/test-reporter@v1
@@ -96,15 +94,17 @@ jobs:
       - name: Enforce Coverage Threshold
         id: coverage
         run: |
-          COVERAGE=$(grep -oP 'line-rate="\K[0-9.]+' coverage.xml)
+          # Read from the root coverage.xml
+          COVERAGE=$(grep -oP 'line-rate="\K[0-9.]+' coverage.xml | head -1)
+          # Convert decimal (e.g., 0.86) to whole number (86)
           COVERAGE_PERCENT=$(echo "$COVERAGE * 100" | bc | cut -d'.' -f1)
           echo "Line Coverage: $COVERAGE_PERCENT%"
+          echo "coverage=$COVERAGE_PERCENT" >> $GITHUB_OUTPUT
+          
           if [ "$COVERAGE_PERCENT" -lt "$COVERAGE_THRESHOLD" ]; then
-            echo "Coverage is below threshold ($COVERAGE_THRESHOLD%)"
+            echo "Coverage $COVERAGE_PERCENT% is below threshold ($COVERAGE_THRESHOLD%)"
             exit 1
           fi
-          # Set step output
-          echo "coverage=$COVERAGE_PERCENT" >> $GITHUB_OUTPUT
 
       - name: Set Badge Info
         if: matrix.python-version == '3.12' && (github.ref_name == 'master' || github.ref_name == 'develop')
