@@ -51,10 +51,12 @@ jobs:
           pip install pytest pytest-cov
 
       - name: Build package
+        working-directory: Moneyball.ML.Python
         run: |
           python -m build
 
       - name: Run tests with coverage
+        working-directory: Moneyball.ML.Python
         run: |
           cd Moneyball.ML.Python
           pytest \
