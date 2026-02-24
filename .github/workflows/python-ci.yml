@@ -5,10 +5,26 @@ on:
     branches:
       - develop
       - master
+    # Skip workflow if only .NET or DB project changed
+    paths-ignore:
+      - 'badges/**'
+      - 'Moneyball.API/**'
+      - 'Moneyball.Core/**'
+      - 'Moneyball.Database/**'
+      - 'Moneyball.Infrastructure/**'
+      - 'Moneyball.Tests/**'
   pull_request:
     branches:
       - develop
       - master
+    # Skip workflow if only .NET or DB project changed
+    paths-ignore:
+      - 'badges/**'
+      - 'Moneyball.API/**'
+      - 'Moneyball.Core/**'
+      - 'Moneyball.Database/**'
+      - 'Moneyball.Infrastructure/**'
+      - 'Moneyball.Tests/**'
 
 jobs:  
   build-python:
