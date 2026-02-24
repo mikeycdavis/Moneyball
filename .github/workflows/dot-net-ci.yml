@@ -7,7 +7,7 @@ on:
       - master
     # Skip workflow if only Python or DB project changed
     paths-ignore:
-      - '.github\workflows\python-ci.yml'
+      - '.github/workflows/python-ci.yml'
       - 'badges/**'
       - 'Moneyball.ML.Python/**'
       - 'Moneyball.Database/**'
@@ -17,7 +17,7 @@ on:
       - master
     # Skip workflow if only Python or DB project changed
     paths-ignore:
-      - '.github\workflows\python-ci.yml'
+      - '.github/workflows/python-ci.yml'
       - 'badges/**'
       - 'Moneyball.ML.Python/**'
       - 'Moneyball.Database/**'
