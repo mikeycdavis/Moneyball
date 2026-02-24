@@ -2,10 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Http.Resilience;
 using Moneyball.Core.Interfaces.ExternalAPIs;
 using Moneyball.Core.Interfaces.ExternalServices;
+using Moneyball.Core.Interfaces.ML;
 using Moneyball.Core.Interfaces.Repositories;
 using Moneyball.Infrastructure.ExternalAPIs.Odds;
 using Moneyball.Infrastructure.ExternalAPIs.SportsRadar;
 using Moneyball.Infrastructure.ExternalServices;
+using Moneyball.Infrastructure.ML;
 using Moneyball.Infrastructure.Repositories;
 using Polly;
 using System.Reflection;
@@ -68,11 +70,10 @@ public static class ServiceCollectionExtensions
 
         public void ConfigureRepositories()
         {
-            //services.AddScoped<IGameOddsRepository, GameOddsRepository>();
-            //services.AddScoped<IRepository<GameOdds>, Repository<GameOdds>>();
             //services.AddScoped<IGameRepository, GameRepository>();
             //services.AddScoped<IModelRepository, ModelRepository>();
             services.AddScoped<IMoneyballRepository, MoneyballRepository>();
+            //services.AddScoped<IOddsRepository, OddsRepository>();
             //services.AddScoped<IPredictionRepository, PredictionRepository>();
             //services.AddScoped<ITeamRepository, TeamRepository>();
         }
@@ -86,6 +87,10 @@ public static class ServiceCollectionExtensions
             // Data Services
             services.AddScoped<IDataIngestionService, DataIngestionService>();
             services.AddScoped<IDataIngestionOrchestrator, DataIngestionOrchestrator>();
+
+            // Executors
+            services.AddScoped<IModelExecutor, MLNetModelExecutor>();
+            services.AddScoped<IModelExecutor, PythonModelExecutor>();
         }
 
         public void ConfigureSwagger()
