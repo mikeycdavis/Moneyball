@@ -18,6 +18,7 @@
   <p><strong>Python</strong></p>
   <img src="https://raw.githubusercontent.com/mikeycdavis/Moneyball/develop/badges/coverage-python-develop.svg" alt="Coverage Develop">
   <img src="https://raw.githubusercontent.com/mikeycdavis/Moneyball/master/badges/coverage-python-master.svg" alt="Coverage Master">
-
+</div>
+<div>
   <p><em>Advanced probability and modeling engine.</em></p>
 </div>
