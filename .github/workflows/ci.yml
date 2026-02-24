@@ -63,6 +63,10 @@ jobs:
             --no-build \
             --collect:"XPlat Code Coverage" \
             --logger "trx;LogFileName=test-results.trx"
+            
+      - name: Debug Coverage
+        run: |
+          grep -R "Program.cs" TestResults || echo "Program.cs not found in coverage"
 
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
