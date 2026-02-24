@@ -111,7 +111,7 @@ jobs:
           fi
 
       - name: Set Badge Info
-        if: matrix.python-version == '3.12' && (github.ref_name == 'master' || github.ref_name == 'develop')
+        if: matrix.python-version == '3.12.x' && (github.ref_name == 'master' || github.ref_name == 'develop')
         run: |
           if [ "${GITHUB_REF_NAME}" == "master" ]; then
             BADGE_FILE="badges/coverage-python-master.svg"
@@ -125,7 +125,7 @@ jobs:
           echo "BADGE_LABEL=$BADGE_LABEL" >> $GITHUB_ENV
 
       - name: Set Badge Color
-        if: matrix.python-version == '3.12'
+        if: matrix.python-version == '3.12.x'
         run: |
           if [ "${{ steps.coverage.outputs.coverage }}" -ge "$COVERAGE_THRESHOLD" ]; then
             COLOR="44cc11"
@@ -137,7 +137,7 @@ jobs:
           echo "BADGE_COLOR=$COLOR" >> $GITHUB_ENV
 
       - name: Generate Coverage Badge
-        if: matrix.python-version == '3.12' && (github.ref_name == 'master' || github.ref_name == 'develop')
+        if: matrix.python-version == '3.12.x' && (github.ref_name == 'master' || github.ref_name == 'develop')
         uses: emibcn/badge-action@v2
         with:
           label: ${{ env.BADGE_LABEL }}
@@ -146,7 +146,7 @@ jobs:
           path: ${{ env.BADGE_FILE }}
 
       - name: Commit Badge
-        if: matrix.python-version == '3.12' && (github.ref_name == 'master' || github.ref_name == 'develop')
+        if: matrix.python-version == '3.12.x' && (github.ref_name == 'master' || github.ref_name == 'develop')
         uses: EndBug/add-and-commit@v9
         with:
           add: ${{ env.BADGE_FILE }}
