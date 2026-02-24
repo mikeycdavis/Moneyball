@@ -11,10 +11,12 @@
     [OverUnder]      DECIMAL (5, 2)  NULL,
     [OverOdds]       DECIMAL (10, 2) NULL,
     [UnderOdds]      DECIMAL (10, 2) NULL,
-    [RecordedAt]     DATETIME2 (7)   DEFAULT (getutcdate()) NULL,
-    PRIMARY KEY CLUSTERED ([OddsId] ASC),
-    FOREIGN KEY ([GameId]) REFERENCES [dbo].[Games] ([GameId])
+    [RecordedAt]     DATETIME2 (7)   NOT NULL,
+    CONSTRAINT [PK_GameOdds] PRIMARY KEY CLUSTERED ([OddsId] ASC),
+    CONSTRAINT [FK_GameOdds_Games_GameId] FOREIGN KEY ([GameId]) REFERENCES [dbo].[Games] ([GameId]) ON DELETE CASCADE
 );
+
+
 
 
 GO

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Moneyball.Infrastructure.Repositories;
 
@@ -11,9 +12,11 @@ using Moneyball.Infrastructure.Repositories;
 namespace Moneyball.Infrastructure.Migrations
 {
     [DbContext(typeof(MoneyballDbContext))]
-    partial class MoneyballDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260224172944_AddingColumnsToModelPerformance")]
+    partial class AddingColumnsToModelPerformance
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -226,7 +229,7 @@ namespace Moneyball.Infrastructure.Migrations
                     b.Property<decimal>("Precision")
                         .HasColumnType("decimal(5,4)");
 
-                    b.Property<decimal>("ROI")
+                    b.Property<decimal?>("ROI")
                         .HasColumnType("decimal(10,4)");
 
                     b.Property<decimal>("Recall")

@@ -7,9 +7,11 @@
     [City]         NVARCHAR (100) NULL,
     [Conference]   NVARCHAR (100) NULL,
     [Division]     NVARCHAR (100) NULL,
-    PRIMARY KEY CLUSTERED ([TeamId] ASC),
-    FOREIGN KEY ([SportId]) REFERENCES [dbo].[Sports] ([SportId])
+    CONSTRAINT [PK_Teams] PRIMARY KEY CLUSTERED ([TeamId] ASC),
+    CONSTRAINT [FK_Teams_Sports_SportId] FOREIGN KEY ([SportId]) REFERENCES [dbo].[Sports] ([SportId]) ON DELETE CASCADE
 );
+
+
 
 
 GO

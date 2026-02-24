@@ -173,10 +173,16 @@ BEGIN
         PerformanceId INT PRIMARY KEY IDENTITY(1,1),
         ModelId INT NOT NULL FOREIGN KEY REFERENCES Models(ModelId),
         EvaluationDate DATETIME2 DEFAULT GETUTCDATE(),
-        Accuracy DECIMAL(5,4),
-        ROI DECIMAL(10,4),
-        SampleSize INT,
-        Metrics NVARCHAR(MAX)
+        Accuracy DECIMAL(5,4) NOT NULL,       -- 0.0000 to 1.0000
+        Precision DECIMAL(5,4) NOT NULL,      -- 0.0000 to 1.0000
+        Recall DECIMAL(5,4) NOT NULL,         -- 0.0000 to 1.0000
+        F1Score DECIMAL(5,4) NOT NULL,        -- 0.0000 to 1.0000
+        AUC DECIMAL(5,4) NOT NULL,            -- 0.0000 to 1.0000
+        LogLoss DECIMAL(8,6) NOT NULL,        -- e.g., 0.000001 to 9.999999
+        TrainingSamples INT NOT NULL,
+        ValidationSamples INT NOT NULL,
+        FeatureImportance JSON NULL,            -- Store dictionary as JSON
+        ROI DECIMAL(10,4)
     );
 END
 GO

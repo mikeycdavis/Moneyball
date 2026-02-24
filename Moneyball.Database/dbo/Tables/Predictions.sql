@@ -10,11 +10,13 @@
     [PredictedAwayScore]          DECIMAL (5, 2)  NULL,
     [PredictedTotal]              DECIMAL (5, 2)  NULL,
     [FeatureValues]               NVARCHAR (MAX)  NULL,
-    [CreatedAt]                   DATETIME2 (7)   DEFAULT (getutcdate()) NULL,
-    PRIMARY KEY CLUSTERED ([PredictionId] ASC),
-    FOREIGN KEY ([GameId]) REFERENCES [dbo].[Games] ([GameId]),
-    FOREIGN KEY ([ModelId]) REFERENCES [dbo].[Models] ([ModelId])
+    [CreatedAt]                   DATETIME2 (7)   NOT NULL,
+    CONSTRAINT [PK_Predictions] PRIMARY KEY CLUSTERED ([PredictionId] ASC),
+    CONSTRAINT [FK_Predictions_Games_GameId] FOREIGN KEY ([GameId]) REFERENCES [dbo].[Games] ([GameId]),
+    CONSTRAINT [FK_Predictions_Models_ModelId] FOREIGN KEY ([ModelId]) REFERENCES [dbo].[Models] ([ModelId])
 );
+
+
 
 
 GO

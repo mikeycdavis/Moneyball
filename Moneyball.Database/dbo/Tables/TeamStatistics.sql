@@ -30,14 +30,21 @@
     [Sacks]                INT            NULL,
     [TimeOfPossession]     DECIMAL (5, 2) NULL,
     [AdditionalStats]      NVARCHAR (MAX) NULL,
-    [CreatedAt]            DATETIME2 (7)  DEFAULT (getutcdate()) NULL,
-    PRIMARY KEY CLUSTERED ([TeamStatisticId] ASC),
-    FOREIGN KEY ([GameId]) REFERENCES [dbo].[Games] ([GameId]),
-    FOREIGN KEY ([TeamId]) REFERENCES [dbo].[Teams] ([TeamId])
+    [CreatedAt]            DATETIME2 (7)  NOT NULL,
+    CONSTRAINT [PK_TeamStatistics] PRIMARY KEY CLUSTERED ([TeamStatisticId] ASC),
+    CONSTRAINT [FK_TeamStatistics_Games_GameId] FOREIGN KEY ([GameId]) REFERENCES [dbo].[Games] ([GameId]) ON DELETE CASCADE,
+    CONSTRAINT [FK_TeamStatistics_Teams_TeamId] FOREIGN KEY ([TeamId]) REFERENCES [dbo].[Teams] ([TeamId])
 );
+
+
 
 
 GO
 CREATE NONCLUSTERED INDEX [IX_TeamStatistics_GameId_TeamId]
     ON [dbo].[TeamStatistics]([GameId] ASC, [TeamId] ASC);
+
+
+GO
+CREATE NONCLUSTERED INDEX [IX_TeamStatistics_TeamId]
+    ON [dbo].[TeamStatistics]([TeamId] ASC);
 
