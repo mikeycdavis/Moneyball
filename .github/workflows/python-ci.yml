@@ -63,10 +63,12 @@ jobs:
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
 
       - name: Install dependencies
+        working-directory: Moneyball.ML.Python
         run: |
           python -m pip install --upgrade pip setuptools wheel build
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install pytest pytest-cov
+          if [ -f requirements.txt ]; then 
+            pip install -r requirements.txt; 
+          fi
 
       - name: Build package
         working-directory: Moneyball.ML.Python
