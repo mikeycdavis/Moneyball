@@ -31,3 +31,12 @@ moneyball-ml = "moneyball_ml_python.app:main"
 
 [tool.setuptools]
 packages = ["moneyball_ml_python"]
+
+[tool.coverage.run]
+omit = [
+    "*__init__.py",
+    "tests/*"      # It's also common to exclude the tests themselves
+]
+
+[tool.coverage.report]
+skip_empty = true  # Automatically hides __init__.py if they have no code
