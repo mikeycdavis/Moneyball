@@ -2,11 +2,11 @@
 
 **Build Status**  
 - **.NET**  
-  - ![Develop CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/ci.yml?branch=develop&job=build-dot-net&label=develop)  
-  - ![Master CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/ci.yml?branch=master&job=build-dot-net&label=master)  
+  - ![Develop CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/dot-net-ci.yml?branch=develop&label=develop)  
+  - ![Master CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/dot-net-ci.yml?branch=master&label=master)  
 - **Python**  
-  - ![Develop CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/ci.yml?branch=develop&job=build-python&label=develop)  
-  - ![Master CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/ci.yml?branch=master&job=build-python&label=master)
+  - ![Develop CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/python-ci.yml?branch=develop&label=develop)  
+  - ![Master CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/python-ci.yml?branch=master&label=master)
 
 **Code Coverage**  
 - **.NET**  
