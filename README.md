@@ -1,19 +1,23 @@
-# Moneyball
+<div>
+  <h1>Moneyball</h1>
 
-**Build Status**  
-- **.NET**  
-  - ![Develop CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/dot-net-ci.yml?branch=develop&label=develop)  
-  - ![Master CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/dot-net-ci.yml?branch=master&label=master)  
-- **Python**  
-  - ![Develop CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/python-ci.yml?branch=develop&label=develop)  
-  - ![Master CI](https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/python-ci.yml?branch=master&label=master)
+  <h3>Build Status</h3>
+  <p><strong>.NET</strong></p>
+  <img src="https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/dot-net-ci.yml?branch=develop&label=develop" alt="Develop CI">
+  <img src="https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/dot-net-ci.yml?branch=master&label=master" alt="Master CI">
 
-**Code Coverage**  
-- **.NET**  
-  - ![Coverage Develop](https://raw.githubusercontent.com/mikeycdavis/Moneyball/develop/badges/coverage-develop.svg)  
-  - ![Coverage Master](https://raw.githubusercontent.com/mikeycdavis/Moneyball/master/badges/coverage-master.svg)  
-- **Python**  
-  - ![Coverage Develop](https://raw.githubusercontent.com/mikeycdavis/Moneyball/develop/badges/coverage-python-develop.svg)  
-  - ![Coverage Master](https://raw.githubusercontent.com/mikeycdavis/Moneyball/master/badges/coverage-python-master.svg)
+  <p><strong>Python</strong></p>
+  <img src="https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/python-ci.yml?branch=develop&label=develop" alt="Develop CI">
+  <img src="https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/python-ci.yml?branch=master&label=master" alt="Master CI">
 
-Advanced probability and modeling engine.
+  <h3>Code Coverage</h3>
+  <p><strong>.NET</strong></p>
+  <img src="https://raw.githubusercontent.com/mikeycdavis/Moneyball/develop/badges/coverage-develop.svg" alt="Coverage Develop">
+  <img src="https://raw.githubusercontent.com/mikeycdavis/Moneyball/master/badges/coverage-master.svg" alt="Coverage Master">
+
+  <p><strong>Python</strong></p>
+  <img src="https://raw.githubusercontent.com/mikeycdavis/Moneyball/develop/badges/coverage-python-develop.svg" alt="Coverage Develop">
+  <img src="https://raw.githubusercontent.com/mikeycdavis/Moneyball/master/badges/coverage-python-master.svg" alt="Coverage Master">
+
+  <p><em>Advanced probability and modeling engine.</em></p>
+</div>
