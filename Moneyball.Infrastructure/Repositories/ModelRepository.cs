@@ -27,7 +27,7 @@ public class ModelRepository(MoneyballDbContext context) : Repository<Model>(con
     {
         return await _dbSet
             .Include(m => m.Sport)
-            .Where(m => m.ModelType == modelType && m.IsActive)
+            .Where(m => m.Type == modelType && m.IsActive)
             .ToListAsync();
     }
 }

@@ -6,7 +6,7 @@ namespace Moneyball.Core.DTOs
     {
         public int GameId { get; set; }
         public string? ExternalGameId { get; set; }
-        public string Sport { get; set; } = string.Empty;
+        public SportType Sport { get; set; }
         public TeamResult HomeTeam { get; set; } = new();
         public TeamResult AwayTeam { get; set; } = new();
         public DateTime GameDate { get; set; }

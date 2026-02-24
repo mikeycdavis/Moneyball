@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Moneyball.Core.Enums;
 using Moneyball.Core.Interfaces.ExternalServices;
 
 namespace Moneyball.Infrastructure.ExternalServices;
@@ -13,28 +14,41 @@ public class DataIngestionOrchestrator(
 
         try
         {
-            if (sportId == 1) // NBA
+            switch (sportId)
             {
-                // Step 1: Ingest teams (if not already done)
-                logger.LogInformation("Ingesting NBA teams...");
-                await dataIngestionService.IngestNBATeamsAsync();
+                // NBA
+                case (int)SportType.NBA:
+                    // Step 1: Ingest teams (if not already done)
+                    logger.LogInformation("Ingesting NBA teams...");
+                    await dataIngestionService.IngestNBATeamsAsync();
 
-                // Step 2: Ingest schedule for next 14 days
-                logger.LogInformation("Ingesting NBA schedule...");
-                await dataIngestionService.IngestNBAScheduleAsync(
-                    DateTime.UtcNow.Date.AddDays(-1),
-                    DateTime.UtcNow.Date.AddDays(14));
+                    // Step 2: Ingest schedule for next 14 days
+                    logger.LogInformation("Ingesting NBA schedule...");
+                    await dataIngestionService.IngestNBAScheduleAsync(
+                        DateTime.UtcNow.Date.AddDays(-1),
+                        DateTime.UtcNow.Date.AddDays(14));
 
-                // Step 3: Ingest odds for the last 48 hours
-                logger.LogInformation("Ingesting NBA odds...");
-                await dataIngestionService.IngestNBAOddsAsync(
-                    DateTime.UtcNow.AddHours(-48),
-                    DateTime.UtcNow.AddHours(1));
-            }
-            else if (sportId == 2) // NFL
-            {
-                // Similar implementation for NFL
-                logger.LogInformation("NFL ingestion not yet implemented");
+                    // Step 3: Ingest odds for the last 48 hours
+                    logger.LogInformation("Ingesting NBA odds...");
+                    await dataIngestionService.IngestNBAOddsAsync(
+                        DateTime.UtcNow.AddHours(-48),
+                        DateTime.UtcNow.AddHours(1));
+                    break;
+                // NFL
+                case (int)SportType.NFL:
+                    // Similar implementation for NFL
+                    logger.LogInformation("NFL ingestion not yet implemented");
+                    break;
+                // NHL
+                case (int)SportType.NHL:
+                    // Similar implementation for NHL
+                    logger.LogInformation("NHL ingestion not yet implemented");
+                    break;
+                // MLB
+                case (int)SportType.MLB:
+                    // Similar implementation for MLB
+                    logger.LogInformation("MLB ingestion not yet implemented");
+                    break;
             }
 
             logger.LogInformation("Full data ingestion complete for sport {SportId}", sportId);

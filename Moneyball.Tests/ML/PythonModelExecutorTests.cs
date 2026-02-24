@@ -63,7 +63,7 @@ public class PythonModelExecutorTests
     /// </summary>
     private static (Model model, Dictionary<string, object> features) DefaultInputs() =>
     (
-        new Model { Name = "WinPredictor", Version = "1.0", ModelType = ModelType.Python },
+        new Model { Name = "WinPredictor", Version = "1.0", Type = ModelType.Python },
         new Dictionary<string, object> { ["goals"] = 3, ["shots"] = 12 }
     );
 
@@ -111,7 +111,7 @@ public class PythonModelExecutorTests
     {
         var client = CreateHttpClient(HttpStatusCode.OK);
         var executor = new PythonModelExecutor(client, BuildConfig());
-        var model = new Model { ModelType = ModelType.Python };
+        var model = new Model { Type = ModelType.Python };
 
         executor.CanExecute(model).Should().BeTrue();
     }
@@ -123,7 +123,7 @@ public class PythonModelExecutorTests
         var executor = new PythonModelExecutor(client, BuildConfig());
 
         // Any model type that is not Python should be rejected
-        var model = new Model { ModelType = ModelType.MLNet };
+        var model = new Model { Type = ModelType.MLNet };
 
         executor.CanExecute(model).Should().BeFalse();
     }

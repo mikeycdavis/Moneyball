@@ -45,7 +45,7 @@ public class MLNetModelExecutor : IModelExecutor
     public bool CanExecute(Model model)
     {
         ArgumentNullException.ThrowIfNull(model);
-        return model.ModelType == SupportedModelType;
+        return model.Type == SupportedModelType;
     }
 
     /// <summary>

@@ -17,7 +17,7 @@ public class PythonModelExecutor(HttpClient httpClient, IConfiguration config) :
 
     public ModelType SupportedModelType => ModelType.Python;
 
-    public bool CanExecute(Model model) => model.ModelType == SupportedModelType;
+    public bool CanExecute(Model model) => model.Type == SupportedModelType;
 
     public async Task<PredictionResult> ExecuteAsync(
         Model model,

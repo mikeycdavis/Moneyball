@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moneyball.Core.Entities;
+using Moneyball.Core.Enums;
 using Moneyball.Infrastructure.Repositories;
 
 namespace Moneyball.Tests.Repositories;
@@ -30,7 +31,7 @@ public class TeamRepositoryTests : IDisposable
 
     #region Helpers
 
-    private static Sport CreateSport(int id, string name = "Football") =>
+    private static Sport CreateSport(int id, SportType name = SportType.NFL) =>
         new() { SportId = id, Name = name };
 
     private static Team CreateTeam(
@@ -50,7 +51,7 @@ public class TeamRepositoryTests : IDisposable
     {
         _context.Sports.AddRange(
             CreateSport(1),
-            CreateSport(2, "Basketball"));
+            CreateSport(2, SportType.NBA));
 
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -261,7 +262,7 @@ public class TeamRepositoryTests : IDisposable
 
             var result = await _sut.GetTeamWithStatsAsync(teamId: 1);
 
-            result!.Sport.Name.Should().Be("Basketball");
+            result!.Sport.Name.Should().Be(SportType.NBA);
         }
 
         [Fact]

@@ -31,7 +31,7 @@ public class PredictionRepositoryTests : IDisposable
 
     #region Helpers
 
-    private static Sport CreateSport(int id, string name = "Football") =>
+    private static Sport CreateSport(int id, SportType name = SportType.NFL) =>
         new() { SportId = id, Name = name };
 
     private static Team CreateTeam(int id, string name) =>
@@ -405,7 +405,7 @@ public class PredictionRepositoryTests : IDisposable
         public async Task FiltersBySportIdWhenProvided()
         {
             await SeedBaseDataAsync();
-            _context.Sports.Add(CreateSport(2, "Basketball"));
+            _context.Sports.Add(CreateSport(2, SportType.NBA));
             _context.Games.AddRange(
                 CreateGame(1, sportId: 1),
                 CreateGame(2, sportId: 2));
@@ -426,7 +426,7 @@ public class PredictionRepositoryTests : IDisposable
         public async Task ReturnsAllSportsWhenSportIdIsNull()
         {
             await SeedBaseDataAsync();
-            _context.Sports.Add(CreateSport(2, "Basketball"));
+            _context.Sports.Add(CreateSport(2, SportType.NBA));
             _context.Games.AddRange(CreateGame(1, sportId: 1), CreateGame(2, sportId: 2));
             await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 

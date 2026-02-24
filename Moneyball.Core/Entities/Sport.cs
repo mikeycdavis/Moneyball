@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Moneyball.Core.Enums;
 
 namespace Moneyball.Core.Entities
 {
@@ -12,7 +13,7 @@ namespace Moneyball.Core.Entities
 
         [Required]
         [MaxLength(50)]
-        public string Name { get; set; } = string.Empty;
+        public SportType Name { get; set; }
 
         public bool IsActive { get; set; } = true;
 

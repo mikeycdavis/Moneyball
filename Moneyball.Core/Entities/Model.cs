@@ -4,24 +4,34 @@ using Moneyball.Core.Enums;
 
 namespace Moneyball.Core.Entities;
 
+/// <summary>
+/// Represents a trained ML model stored in the system.
+/// Contains metadata and file location for model execution.
+/// </summary>
 [Table("Models", Schema = "dbo")]
 public class Model
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int ModelId { get; set; }
-
+    
+    /// <summary>
+    /// Unique identifier for the model (e.g., "NBA_LogisticRegression_v2")
+    /// </summary>
     [Required]
     [MaxLength(100)]
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Type of model (e.g., "Python", "ML.NET", "ONNX", "TensorFlow")
+    /// </summary>
+    public ModelType Type { get; set; }
 
     [Required]
     [MaxLength(50)]
     public string Version { get; set; } = string.Empty;
 
     public int SportId { get; set; }
-
-    public ModelType ModelType { get; set; }
 
     [MaxLength(500)]
     public string? FilePath { get; set; }

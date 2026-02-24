@@ -2,9 +2,10 @@
 {
     public enum SportType
     {
-        NBA = 1,
-        NFL = 2,
-        NHL = 3,
-        MLB = 4
+        Unknown,
+        NBA,
+        NFL,
+        NHL,
+        MLB
     }
 }

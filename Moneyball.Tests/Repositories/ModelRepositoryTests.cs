@@ -31,7 +31,7 @@ public class ModelRepositoryTests : IDisposable
 
     #region Helpers
 
-    private static Sport CreateSport(int id, string name = "Football") =>
+    private static Sport CreateSport(int id, SportType name = SportType.NFL) =>
         new() { SportId = id, Name = name };
 
     private static Model CreateModel(
@@ -49,7 +49,7 @@ public class ModelRepositoryTests : IDisposable
             Version = version,
             SportId = sportId,
             IsActive = isActive,
-            ModelType = modelType,
+            Type = modelType,
             CreatedAt = createdAt ?? DateTime.UtcNow
         };
 
@@ -57,7 +57,7 @@ public class ModelRepositoryTests : IDisposable
     {
         _context.Sports.AddRange(
             CreateSport(1),
-            CreateSport(2, "Basketball"));
+            CreateSport(2, SportType.NBA));
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
@@ -226,7 +226,7 @@ public class ModelRepositoryTests : IDisposable
             var result = await _sut.GetByNameAndVersionAsync("Predictor", "1.0");
 
             result!.Sport.Should().NotBeNull();
-            result.Sport.Name.Should().Be("Football");
+            result.Sport.Name.Should().Be(SportType.NFL);
         }
     }
 
@@ -250,7 +250,7 @@ public class ModelRepositoryTests : IDisposable
             var result = await _sut.GetModelsByTypeAsync(ModelType.Python);
 
             result.Should().HaveCount(2)
-                .And.OnlyContain(m => m.ModelType == ModelType.Python);
+                .And.OnlyContain(m => m.Type == ModelType.Python);
         }
 
         [Fact]

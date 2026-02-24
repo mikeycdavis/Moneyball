@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Moneyball.Core.Entities;
+using Moneyball.Core.Enums;
 
 namespace Moneyball.Infrastructure.Repositories;
 
@@ -23,6 +24,9 @@ public class MoneyballDbContext(DbContextOptions<MoneyballDbContext> options) : 
         modelBuilder.Entity<Sport>(entity =>
         {
             entity.HasIndex(e => e.Name).IsUnique();
+
+            entity.Property(e => e.Name)
+                .HasConversion<string>();
         });
 
         // Team configuration
@@ -39,6 +43,9 @@ public class MoneyballDbContext(DbContextOptions<MoneyballDbContext> options) : 
             entity.HasIndex(e => new { e.SportId, e.GameDate });
             entity.HasIndex(e => e.ExternalGameId);
             entity.HasIndex(e => new { e.Status, e.GameDate });
+
+            entity.Property(e => e.Status)
+                .HasConversion<string>();
 
             // Preserve Team records when a Game is deleted
             entity.HasOne(e => e.HomeTeam)
@@ -77,6 +84,9 @@ public class MoneyballDbContext(DbContextOptions<MoneyballDbContext> options) : 
         {
             entity.HasIndex(e => new { e.Name, e.Version }).IsUnique();
             entity.HasIndex(e => new { e.SportId, e.IsActive });
+
+            entity.Property(e => e.Type)
+                .HasConversion<string>();
         });
 
         // Prediction configuration
@@ -119,10 +129,10 @@ public class MoneyballDbContext(DbContextOptions<MoneyballDbContext> options) : 
 
         // Seed initial sports
         modelBuilder.Entity<Sport>().HasData(
-            new Sport { SportId = 1, Name = "NBA", IsActive = true },
-            new Sport { SportId = 2, Name = "NFL", IsActive = true },
-            new Sport { SportId = 3, Name = "NHL", IsActive = true },
-            new Sport { SportId = 4, Name = "MLB", IsActive = true }
+            new Sport { SportId = 1, Name = SportType.NBA, IsActive = true },
+            new Sport { SportId = 2, Name = SportType.NFL, IsActive = true },
+            new Sport { SportId = 3, Name = SportType.NHL, IsActive = true },
+            new Sport { SportId = 4, Name = SportType.MLB, IsActive = true }
         );
     }
 }

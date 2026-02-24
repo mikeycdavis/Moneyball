@@ -26,7 +26,7 @@ public class DataIngestionService(
         try
         {
             // Step 1: Get NBA sport entity
-            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
+            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == SportType.NBA);
 
             if (nbaSport == null)
             {
@@ -171,7 +171,7 @@ public class DataIngestionService(
         try
         {
             // Step 1: Get NBA sport entity
-            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
+            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == SportType.NBA);
 
             if (nbaSport == null)
             {
@@ -336,7 +336,7 @@ public class DataIngestionService(
         try
         {
             // Step 1: Get NBA sport entity
-            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
+            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == SportType.NBA);
 
             if (nbaSport == null)
             {
@@ -425,7 +425,7 @@ public class DataIngestionService(
         try
         {
             // Step 1: Get NBA sport entity
-            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
+            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == SportType.NBA);
 
             if (nbaSport == null)
             {
@@ -564,8 +564,8 @@ public class DataIngestionService(
             // Map sport key to our sport name
             var sportName = sport switch
             {
-                "basketball_nba" => "NBA",
-                "americanfootball_nfl" => "NFL",
+                "basketball_nba" => SportType.NBA,
+                "americanfootball_nfl" => SportType.NFL,
                 _ => throw new ArgumentException($"Unsupported sport: {sport}")
             };
 
@@ -682,7 +682,7 @@ public class DataIngestionService(
         try
         {
             // Step 1: Get NBA sport entity
-            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == "NBA");
+            var nbaSport = await moneyballRepository.Sports.FirstOrDefaultAsync(s => s.Name == SportType.NBA);
 
             if (nbaSport == null)
             {

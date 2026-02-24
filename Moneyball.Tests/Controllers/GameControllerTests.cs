@@ -57,7 +57,7 @@ public class GamesControllerTests
         {
             GameId = gameId,
             ExternalGameId = $"ext-{gameId}",
-            Sport = new Sport { SportId = 1, Name = "NBA" },
+            Sport = new Sport { SportId = 1, Name = SportType.NBA },
             HomeTeam = new Team
             {
                 TeamId = 10,
@@ -134,7 +134,7 @@ public class GamesControllerTests
         {
             GameId = 1,
             ExternalGameId = "ext-1",
-            Sport = "NBA",
+            Sport = SportType.NBA,
             HomeTeam = "Los Angeles Lakers",
             AwayTeam = "Boston Celtics",
             Status = GameStatus.Scheduled,
@@ -255,7 +255,7 @@ public class GamesControllerTests
         {
             GameId = 42,
             ExternalGameId = "ext-42",
-            Sport = "NBA",
+            Sport = SportType.NBA,
             Status = GameStatus.Scheduled,
             Score = new { Home = (int?)110, Away = (int?)105 }
         }, options => options.ExcludingMissingMembers());
@@ -570,7 +570,7 @@ public class GamesControllerTests
         items[0].Should().BeEquivalentTo(new
         {
             GameId = 1,
-            Sport = "NBA",
+            Sport = SportType.NBA,
             HomeTeam = "Los Angeles Lakers",
             AwayTeam = "Boston Celtics",
             Status = GameStatus.Scheduled,

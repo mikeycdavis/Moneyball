@@ -137,7 +137,7 @@ public class MLNetModelExecutorTests : IDisposable
             ModelId = 1,
             Name = "NBA_LogisticRegression",
             Version = "1",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath // Acceptance criteria: loads from FilePath (.zip)
         };
 
@@ -172,7 +172,7 @@ public class MLNetModelExecutorTests : IDisposable
         {
             Name = "NBA_XGBoost",
             Version = "2",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath
         };
 
@@ -208,7 +208,7 @@ public class MLNetModelExecutorTests : IDisposable
         {
             Name = "NBA_Model",
             Version = "1",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath
         };
 
@@ -271,7 +271,7 @@ public class MLNetModelExecutorTests : IDisposable
         var model = new Model
         {
             Name = "Test_Model",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath
         };
 
@@ -296,7 +296,7 @@ public class MLNetModelExecutorTests : IDisposable
         var model = new Model
         {
             Name = "Test_Model",
-            ModelType = modelType,
+            Type = modelType,
             FilePath = "/some/path/model.zip"
         };
 
@@ -340,7 +340,7 @@ public class MLNetModelExecutorTests : IDisposable
         var model = new Model
         {
             Name = "Test_Model",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath
         };
         Dictionary<string, object>? features = null;
@@ -389,7 +389,7 @@ public class MLNetModelExecutorTests : IDisposable
         {
             Name = "Test_Model",
             Version = "1",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = filePath!
         };
 
@@ -418,7 +418,7 @@ public class MLNetModelExecutorTests : IDisposable
         {
             Name = "NonExistent_Model",
             Version = "1",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = "/non/existent/path/model.zip"
         };
 
@@ -449,7 +449,7 @@ public class MLNetModelExecutorTests : IDisposable
         {
             Name = "NBA_Model",
             Version = "1",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath
         };
 
@@ -482,7 +482,7 @@ public class MLNetModelExecutorTests : IDisposable
         {
             Name = "NBA_Model",
             Version = "1",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath
         };
 
@@ -517,7 +517,7 @@ public class MLNetModelExecutorTests : IDisposable
         {
             Name = "NBA_Cached",
             Version = "1",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath
         };
 
@@ -562,7 +562,7 @@ public class MLNetModelExecutorTests : IDisposable
         {
             Name = "NBA_ClearCache",
             Version = "1",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath
         };
 
@@ -605,7 +605,7 @@ public class MLNetModelExecutorTests : IDisposable
         {
             Name = "NBA_Features",
             Version = "1",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath
         };
 
@@ -640,7 +640,7 @@ public class MLNetModelExecutorTests : IDisposable
         {
             Name = "NBA_Partial",
             Version = "1",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath
         };
 
@@ -674,7 +674,7 @@ public class MLNetModelExecutorTests : IDisposable
         {
             Name = "NBA_Concurrent",
             Version = "1",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath
         };
 
@@ -716,7 +716,7 @@ public class MLNetModelExecutorTests : IDisposable
         {
             Name = "NBA_Model",
             Version = "1",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath
         };
 
@@ -724,7 +724,7 @@ public class MLNetModelExecutorTests : IDisposable
         {
             Name = "NBA_Model",
             Version = "2",
-            ModelType = ModelType.MLNet,
+            Type = ModelType.MLNet,
             FilePath = _testModelPath // Same file for testing, but different version
         };
 

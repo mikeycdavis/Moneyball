@@ -47,7 +47,7 @@ public class DataIngestionService_IngestNBATeamsAsyncTests
     public async Task IngestNBATeamsAsync_FirstRun_Creates30Teams()
     {
         // Arrange
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -96,7 +96,7 @@ public class DataIngestionService_IngestNBATeamsAsyncTests
     public async Task IngestNBATeamsAsync_SecondRun_NoChanges_UpdatesNothing()
     {
         // Arrange
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -147,7 +147,7 @@ public class DataIngestionService_IngestNBATeamsAsyncTests
     public async Task IngestNBATeamsAsync_NameChanged_UpdatesTeam()
     {
         // Arrange
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -209,7 +209,7 @@ public class DataIngestionService_IngestNBATeamsAsyncTests
     public async Task IngestNBATeamsAsync_AbbreviationChanged_UpdatesTeam()
     {
         // Arrange
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -270,7 +270,7 @@ public class DataIngestionService_IngestNBATeamsAsyncTests
     public async Task IngestNBATeamsAsync_CityChanged_UpdatesTeam()
     {
         // Arrange
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -331,7 +331,7 @@ public class DataIngestionService_IngestNBATeamsAsyncTests
     public async Task IngestNBATeamsAsync_MultipleFieldsChanged_UpdatesSingleTime()
     {
         // Arrange
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -408,7 +408,7 @@ public class DataIngestionService_IngestNBATeamsAsyncTests
     public async Task IngestNBATeamsAsync_APIReturnsEmpty_LogsWarningAndReturns()
     {
         // Arrange
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -430,7 +430,7 @@ public class DataIngestionService_IngestNBATeamsAsyncTests
     public async Task IngestNBATeamsAsync_TeamWithMissingId_SkipsTeam()
     {
         // Arrange
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -476,7 +476,7 @@ public class DataIngestionService_IngestNBATeamsAsyncTests
     public async Task IngestNBATeamsAsync_TeamWithMissingName_SkipsTeam()
     {
         // Arrange
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -522,7 +522,7 @@ public class DataIngestionService_IngestNBATeamsAsyncTests
     public async Task IngestNBATeamsAsync_MixedNewAndExisting_HandlesCorrectly()
     {
         // Arrange
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -636,7 +636,7 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -686,7 +686,7 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -739,7 +739,7 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -806,7 +806,7 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -875,7 +875,7 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -944,7 +944,7 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -1032,7 +1032,7 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 7, 1); // Off-season
         var endDate = new DateTime(2024, 7, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -1056,7 +1056,7 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -1102,7 +1102,7 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -1147,7 +1147,7 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -1189,7 +1189,7 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -1267,7 +1267,7 @@ public class DataIngestionService_IngestNBAScheduleAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -1411,7 +1411,7 @@ public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -1477,7 +1477,7 @@ public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -1587,7 +1587,7 @@ public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -1668,7 +1668,7 @@ public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -1717,7 +1717,7 @@ public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -1755,7 +1755,7 @@ public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -1794,7 +1794,7 @@ public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -1852,7 +1852,7 @@ public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -1906,9 +1906,8 @@ public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
         var endDate = new DateTime(2024, 1, 7);
 
         // Act & Assert
-        var act = async () => await _service.IngestNBAGameStatisticsAsync(startDate, endDate);
-
-        await act.Should().ThrowAsync<InvalidOperationException>()
+        await FluentActions.Awaiting(async () => await _service.IngestNBAGameStatisticsAsync(startDate, endDate))
+            .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*NBA sport not found*")
             .WithMessage("*Run database migrations or execute DatabaseSetup.sql*");
     }
@@ -1923,7 +1922,7 @@ public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 7, 1);  // Off-season
         var endDate = new DateTime(2024, 7, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -1957,7 +1956,7 @@ public class DataIngestionService_IngestNBAGameStatisticsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -2185,7 +2184,7 @@ public class DataIngestionService_IngestNBAOddsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -2239,7 +2238,7 @@ public class DataIngestionService_IngestNBAOddsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -2300,7 +2299,7 @@ public class DataIngestionService_IngestNBAOddsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -2350,7 +2349,7 @@ public class DataIngestionService_IngestNBAOddsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -2403,7 +2402,7 @@ public class DataIngestionService_IngestNBAOddsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -2606,7 +2605,7 @@ public class DataIngestionService_IngestOddsAsyncTests
     {
         // Arrange - Setup sport
         var sport = "basketball_nba";
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -2723,7 +2722,7 @@ public class DataIngestionService_IngestOddsAsyncTests
     {
         // Arrange
         var sport = "basketball_nba";
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -2816,7 +2815,7 @@ public class DataIngestionService_IngestOddsAsyncTests
     {
         // Arrange
         var sport = "basketball_nba";
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         _mockSportsRepo
             .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<Sport, bool>>>()))
@@ -2934,11 +2933,11 @@ public class DataIngestionService_IngestOddsAsyncTests
     /// Tests that sport key mapping works for both NBA and NFL.
     /// </summary>
     [Theory]
-    [InlineData("basketball_nba", "NBA")]
-    [InlineData("americanfootball_nfl", "NFL")]
+    [InlineData("basketball_nba", SportType.NBA)]
+    [InlineData("americanfootball_nfl", SportType.NFL)]
     public async Task IngestOddsAsync_SportKeyMapping_WorksCorrectly(
         string sportKey,
-        string expectedSportName)
+        SportType expectedSportName)
     {
         // Arrange
         Sport? capturedSport = null;
@@ -2974,7 +2973,7 @@ public class DataIngestionService_IngestOddsAsyncTests
     /// </summary>
     private void SetupBasicOddsAPIMocks(string sport)
     {
-        var sportName = sport == "basketball_nba" ? "NBA" : "NFL";
+        var sportName = sport == "basketball_nba" ? SportType.NBA : SportType.NFL;
         var sportEntity = new Sport { SportId = 1, Name = sportName };
 
         _mockSportsRepo
@@ -3152,7 +3151,7 @@ public class DataIngestionService_UpdateNBAGameResultsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -3230,7 +3229,7 @@ public class DataIngestionService_UpdateNBAGameResultsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -3289,7 +3288,7 @@ public class DataIngestionService_UpdateNBAGameResultsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -3365,7 +3364,7 @@ public class DataIngestionService_UpdateNBAGameResultsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -3420,7 +3419,7 @@ public class DataIngestionService_UpdateNBAGameResultsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -3483,7 +3482,7 @@ public class DataIngestionService_UpdateNBAGameResultsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -3575,7 +3574,7 @@ public class DataIngestionService_UpdateNBAGameResultsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -3621,7 +3620,7 @@ public class DataIngestionService_UpdateNBAGameResultsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -3677,7 +3676,7 @@ public class DataIngestionService_UpdateNBAGameResultsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -3759,7 +3758,7 @@ public class DataIngestionService_UpdateNBAGameResultsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 7, 1);
         var endDate = new DateTime(2024, 7, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -3789,7 +3788,7 @@ public class DataIngestionService_UpdateNBAGameResultsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 
@@ -3818,7 +3817,7 @@ public class DataIngestionService_UpdateNBAGameResultsAsyncTests
         // Arrange
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 7);
-        var nbaSport = new Sport { SportId = 1, Name = "NBA" };
+        var nbaSport = new Sport { SportId = 1, Name = SportType.NBA };
 
         SetupBasicMocks(nbaSport);
 

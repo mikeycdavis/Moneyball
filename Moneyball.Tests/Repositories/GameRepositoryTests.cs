@@ -31,7 +31,7 @@ public class GameRepositoryTests : IDisposable
 
     #region Helpers
 
-    private static Sport CreateSport(int id, string name = "Football") =>
+    private static Sport CreateSport(int id, SportType name = SportType.NFL) =>
         new() { SportId = id, Name = name };
 
     private static Team CreateTeam(int id, string name) =>
@@ -60,7 +60,7 @@ public class GameRepositoryTests : IDisposable
     {
         _context.Sports.AddRange(
             CreateSport(1),
-            CreateSport(2, "Basketball"));
+            CreateSport(2, SportType.NBA));
 
         _context.Teams.AddRange(
             CreateTeam(1, "Home Team"),
