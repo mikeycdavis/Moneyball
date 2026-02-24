@@ -14,6 +14,7 @@ jobs:
   build-dot-net:
     name: Build .NET Solution
     runs-on: ubuntu-latest
+    
     permissions:
       checks: write
       contents: write
@@ -149,128 +150,130 @@ jobs:
           path: coverage-report
   
   build-python:
-    name: Build Python Solution:
+    name: Build Python
     runs-on: ubuntu-latest
+
     permissions:
-      checks: write
       contents: write
+      checks: write
 
     env:
       COVERAGE_THRESHOLD: 85
+      COVERAGE_THRESHOLD_WARNING: 75
 
     strategy:
       matrix:
-        python-version: [3.13, 3.12, 3.11, 3.10]  # Add more versions if needed
+        python-version: [3.12, 3.11, 3.10, 3.09]
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Cache pip
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade pip setuptools wheel build
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install pytest pytest-cov junit-xml  # Ensure coverage & JUnit output support
-  
+          pip install pytest pytest-cov
+
       - name: Build package
         run: |
           python -m build
-  
+
       - name: Run tests with coverage
         run: |
-          cd Moneyball.ML.Python || exit 0
-          pytest --junitxml=../test-results/results.xml --cov=. --cov-report=xml --cov-report=term
+          cd Moneyball.ML.Python
+          pytest \
+            --junitxml=../test-results.xml \
+            --cov=. \
+            --cov-report=xml:../coverage.xml \
+            --cov-report=term \
+            --cov-fail-under=$COVERAGE_THRESHOLD
 
       - name: Publish test results
         uses: dorny/test-reporter@v1
+        if: always()
         with:
-          name: Moneyball Python Tests
-          path: "**/test-results.trx"
-          reporter: dotnet-trx
-
-      - name: Install ReportGenerator
-        run: dotnet tool install -g dotnet-reportgenerator-globaltool
-
-      - name: Generate Coverage Report
-        run: |
-          reportgenerator \
-            -reports:**/coverage.cobertura.xml \
-            -targetdir:coverage-report \
-            -reporttypes:"HtmlInline_AzurePipelines;Cobertura;TextSummary"
+          name: Moneyball Python Tests (Py ${{ matrix.python-version }})
+          path: test-results.xml
+          reporter: junit
 
       - name: Show Coverage Summary
-        run: cat coverage-report/Summary.txt
-  
+        run: cat coverage.xml
+
       - name: Enforce Coverage Threshold
         id: coverage
         run: |
-          COVERAGE=$(grep -oP 'Line coverage:\s+\K[0-9.]+' coverage-report/Summary.txt | cut -d'.' -f1)
-          echo "Line Coverage: $COVERAGE%"
-          if [ "$COVERAGE" -lt "$COVERAGE_THRESHOLD" ]; then
+          COVERAGE=$(grep -oP 'line-rate="\K[0-9.]+' coverage.xml)
+          COVERAGE_PERCENT=$(echo "$COVERAGE * 100" | bc | cut -d'.' -f1)
+          echo "Line Coverage: $COVERAGE_PERCENT%"
+          if [ "$COVERAGE_PERCENT" -lt "$COVERAGE_THRESHOLD" ]; then
             echo "Coverage is below threshold ($COVERAGE_THRESHOLD%)"
             exit 1
           fi
           # Set step output
-          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
-          
-      - name: Set Badge File
-        if: github.ref_name == 'master' || github.ref_name == 'develop'
+          echo "coverage=$COVERAGE_PERCENT" >> $GITHUB_OUTPUT
+
+      - name: Set Badge Info
+        if: matrix.python-version == '3.12' && (github.ref_name == 'master' || github.ref_name == 'develop')
         run: |
           if [ "${GITHUB_REF_NAME}" == "master" ]; then
-            BADGE_FILE="badges/coverage_python-master.svg"
-            echo "BADGE_FILE=$BADGE_FILE" >> $GITHUB_ENV
-            echo "BADGE_MSG=chore: update python coverage badge for master" >> $GITHUB_ENV
-            echo "BADGE_FILE = $BADGE_FILE"
+            BADGE_FILE="badges/coverage-python-master.svg"
+            BADGE_LABEL="master"
           else
             BADGE_FILE="badges/coverage-python-develop.svg"
-            echo "BADGE_FILE=$BADGE_FILE" >> $GITHUB_ENV
-            echo "BADGE_MSG=chore: update python coverage badge for develop" >> $GITHUB_ENV
-            echo "BADGE_FILE = $BADGE_FILE"
+            BADGE_LABEL="develop"
           fi
-         
+
+          echo "BADGE_FILE=$BADGE_FILE" >> $GITHUB_ENV
+          echo "BADGE_LABEL=$BADGE_LABEL" >> $GITHUB_ENV
+
       - name: Set Badge Color
+        if: matrix.python-version == '3.12'
         run: |
-          BADGE_COLOR="${{ fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD) && '44cc11' || fromJSON(steps.coverage.outputs.coverage) >= fromJSON(env.COVERAGE_THRESHOLD_WARNING) && 'dfb317' || 'e05d44' }}"
-          echo "BADGE_COLOR=$BADGE_COLOR" >> $GITHUB_ENV
-          echo "BADGE_COLOR = $BADGE_COLOR"
-          
+          if [ "${{ steps.coverage.outputs.coverage }}" -ge "$COVERAGE_THRESHOLD" ]; then
+            COLOR="44cc11"
+          elif [ "${{ steps.coverage.outputs.coverage }}" -ge "$COVERAGE_THRESHOLD_WARNING" ]; then
+            COLOR="dfb317"
+          else
+            COLOR="e05d44"
+          fi
+          echo "BADGE_COLOR=$COLOR" >> $GITHUB_ENV
+
       - name: Generate Coverage Badge
-        if: github.ref_name == 'master' || github.ref_name == 'develop'
+        if: matrix.python-version == '3.12' && (github.ref_name == 'master' || github.ref_name == 'develop')
         uses: emibcn/badge-action@v2
         with:
-          label: ${{ github.ref_name }}
+          label: ${{ env.BADGE_LABEL }}
           status: ${{ steps.coverage.outputs.coverage }}%
-          color: "${{ env.BADGE_COLOR }}"
+          color: ${{ env.BADGE_COLOR }}
           path: ${{ env.BADGE_FILE }}
 
       - name: Commit Badge
-        if: github.ref_name == 'master' || github.ref_name == 'develop'
+        if: matrix.python-version == '3.12' && (github.ref_name == 'master' || github.ref_name == 'develop')
         uses: EndBug/add-and-commit@v9
         with:
           add: ${{ env.BADGE_FILE }}
-          message: ${{ env.BADGE_MSG }}
+          message: "chore: update python coverage badge"
           push: true
-          default_author: github_actor
-          pathspec_error_handling: ignore
-          fetch: --tags --force
+          default_author: github_actions
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Coverage Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: coverage-report
+          name: coverage-report-py${{ matrix.python-version }}
+          path: coverage.xml
