@@ -1,11 +1,18 @@
 <div align="center">
   <h1>Moneyball</h1>
+  
+  <table>
+    <tr>
+      <th align="center"><h3>Build Status</h3></th>
+      <th align="center"><h3>Code Coverage</h3></th>
+    </tr>
+  </table>
 
   <h3>Build Status</h3>
   <table align="center">
     <tr>
-      <td align="center"><strong>.NET</strong></td>
-      <td align="center"><strong>Python</strong></td>
+      <th align="center"><strong>.NET</strong></th>
+      <th align="center"><strong>Python</strong></th>
     </tr>
     <tr>
       <td align="center"><img src="https://img.shields.io/github/actions/workflow/status/mikeycdavis/Moneyball/dot-net-ci.yml?branch=develop&label=develop" alt="Develop .NET CI"></td>
@@ -20,8 +27,8 @@
   <h3>Code Coverage</h3>
   <table align="center">
     <tr>
-      <td align="center"><strong>.NET</strong></td>
-      <td align="center"><strong>Python</strong></td>
+      <th align="center"><strong>.NET</strong></th>
+      <th align="center"><strong>Python</strong></th>
     </tr>
     <tr>
       <td align="center"><img src="https://raw.githubusercontent.com/mikeycdavis/Moneyball/develop/badges/coverage-develop.svg" alt="Coverage .NET Develop"></td>
