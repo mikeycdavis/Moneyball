@@ -1,28 +1,6 @@
 name: Train Models and Test
 
 on:
-  push:
-    # Skip workflow if only .NET or DB project changed
-    paths-ignore:
-      - '.github/workflows/dot-net-ci.yml'
-      - '.github/workflows/python.yml'
-      - 'badges/**'
-      - 'Moneyball.API/**'
-      - 'Moneyball.Core/**'
-      - 'Moneyball.Database/**'
-      - 'Moneyball.Infrastructure/**'
-      - 'Moneyball.Tests/**'
-  pull_request:
-    # Skip workflow if only .NET or DB project changed
-    paths-ignore:
-      - '.github/workflows/dot-net-ci.yml'
-      - '.github/workflows/python.yml'
-      - 'badges/**'
-      - 'Moneyball.API/**'
-      - 'Moneyball.Core/**'
-      - 'Moneyball.Database/**'
-      - 'Moneyball.Infrastructure/**'
-      - 'Moneyball.Tests/**'
   workflow_dispatch:  # Allow manual triggering
   #schedule:
     # Run daily at 2 AM UTC to retrain models
