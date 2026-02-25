@@ -2,9 +2,6 @@ name: Train Models and Test
 
 on:
   push:
-    branches:
-      - develop
-      - master
     # Skip workflow if only .NET or DB project changed
     paths-ignore:
       - '.github/workflows/dot-net-ci.yml'
@@ -16,9 +13,6 @@ on:
       - 'Moneyball.Infrastructure/**'
       - 'Moneyball.Tests/**'
   pull_request:
-    branches:
-      - develop
-      - master
     # Skip workflow if only .NET or DB project changed
     paths-ignore:
       - '.github/workflows/dot-net-ci.yml'
