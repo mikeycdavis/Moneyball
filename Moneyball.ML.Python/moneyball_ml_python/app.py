@@ -3,7 +3,7 @@ Flask application for serving ML model predictions.
 """
 
 from flask import Flask, request, jsonify
-from prediction_service import PredictionService
+from moneyball_ml_python.prediction.predict import PredictionService
 import logging
 
 # Configure logging

@@ -1,5 +1,5 @@
 """
-Tests for prediction_service.py
+Tests for predict.py
 
 Tests all acceptance criteria:
 - All IsActive models loaded at startup
@@ -12,7 +12,7 @@ import pytest
 import json
 import numpy as np
 from pathlib import Path
-from moneyball_ml_python.prediction_service import PredictionService
+from moneyball_ml_python.prediction.predict import PredictionService
 
 
 @pytest.fixture

@@ -32,21 +32,41 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="moneyball_ml_python\data\data_loader.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="moneyball_ml_python\data\__init__.py" />
+    <Compile Include="moneyball_ml_python\prediction\__init__.py" />
+    <Compile Include="moneyball_ml_python\training\model_config.py" />
+    <Compile Include="moneyball_ml_python\training\feature_engineering.py" />
+    <Compile Include="moneyball_ml_python\training\model_trainer.py" />
+    <Compile Include="moneyball_ml_python\utils\edge_calculator.py" />
+    <Compile Include="moneyball_ml_python\utils\__init__.py" />
     <Compile Include="moneyball_ml_python\__init__.py" />
     <Compile Include="moneyball_ml_python\app.py" />
-    <Compile Include="moneyball_ml_python\prediction_service.py" />
+    <Compile Include="moneyball_ml_python\prediction\predict.py" />
     <Compile Include="tests\test_train.py" />
-    <Compile Include="tests\test_prediction_service.py" />
+    <Compile Include="tests\test_predict.py" />
     <Compile Include="tests\__init__.py" />
     <Compile Include="tests\test_app.py" />
-    <Compile Include="training\__init__.py" />
+    <Compile Include="moneyball_ml_python\training\__init__.py" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="models\NBA_LogReg_v1.json" />
-    <Content Include="models\NBA_LogReg_v1.pkl" />
-    <Content Include="models\v1.json" />
-    <Content Include="models\v1.pkl" />
-    <Content Include="training\train.py" />
+    <Content Include="models\first_team_to_20.json" />
+    <Content Include="models\first_team_to_20.pkl" />
+    <Content Include="models\home_cover.json" />
+    <Content Include="models\home_cover.pkl" />
+    <Content Include="models\home_win.json" />
+    <Content Include="models\home_win.pkl" />
+    <Content Include="models\overtime_yes.json" />
+    <Content Include="models\overtime_yes.pkl" />
+    <Content Include="models\player_points_over_25.json" />
+    <Content Include="models\player_points_over_25.pkl" />
+    <Content Include="models\player_rebounds_over_10.json" />
+    <Content Include="models\player_rebounds_over_10.pkl" />
+    <Content Include="models\total_over.json" />
+    <Content Include="models\total_over.pkl" />
+    <Content Include="moneyball_ml_python\training\train.py" />
     <Content Include="pyproject.toml" />
     <Content Include="README.md" />
     <Content Include="requirements.txt" />
@@ -65,7 +85,10 @@
   <ItemGroup>
     <Folder Include="moneyball_ml_python\" />
     <Folder Include="models\" />
-    <Folder Include="training\" />
+    <Folder Include="moneyball_ml_python\data\" />
+    <Folder Include="moneyball_ml_python\utils\" />
+    <Folder Include="moneyball_ml_python\prediction\" />
+    <Folder Include="moneyball_ml_python\training\" />
     <Folder Include="tests\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.Web.targets" />

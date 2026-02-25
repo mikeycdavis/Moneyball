@@ -1,5 +1,5 @@
 """
-Tests package for Moneyball ML Python.
+Data package for Moneyball ML Python.
 """
 
 # This file can be empty or minimal
