@@ -220,18 +220,16 @@ jobs:
       
       # Acceptance Criteria: Upload /models directory as build artifact
       - name: Upload trained models
-        working-directory: Moneyball.ML.Python
         uses: actions/upload-artifact@v4
         with:
           name: trained-models
-          path: models/
+          path: Moneyball.ML.Python/models/
           retention-days: 30
       
       - name: Upload training logs
-        working-directory: Moneyball.ML.Python
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: training-logs
-          path: training.log
+          path: Moneyball.ML.Python/training.log
           retention-days: 7
