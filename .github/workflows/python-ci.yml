@@ -27,6 +27,7 @@ on:
       - 'Moneyball.Database/**'
       - 'Moneyball.Infrastructure/**'
       - 'Moneyball.Tests/**'
+  workflow_dispatch:  # Allow manual triggering
 
 jobs:  
   build-python:

@@ -23,6 +23,7 @@ on:
       - 'badges/**'
       - 'Moneyball.ML.Python/**'
       - 'Moneyball.Database/**'
+  workflow_dispatch:  # Allow manual triggering
 
 jobs:
   build-dot-net:
