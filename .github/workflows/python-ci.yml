@@ -8,6 +8,7 @@ on:
     # Skip workflow if only .NET or DB project changed
     paths-ignore:
       - '.github/workflows/dot-net-ci.yml'
+      - '.github/workflows/model-trainer-ci.yml'
       - 'badges/**'
       - 'Moneyball.API/**'
       - 'Moneyball.Core/**'
@@ -21,6 +22,7 @@ on:
     # Skip workflow if only .NET or DB project changed
     paths-ignore:
       - '.github/workflows/dot-net-ci.yml'
+      - '.github/workflows/model-trainer-ci.yml'
       - 'badges/**'
       - 'Moneyball.API/**'
       - 'Moneyball.Core/**'
