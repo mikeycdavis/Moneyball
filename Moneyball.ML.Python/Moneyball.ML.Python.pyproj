@@ -40,8 +40,6 @@
     <Compile Include="moneyball_ml_python\training\model_config.py" />
     <Compile Include="moneyball_ml_python\training\feature_engineering.py" />
     <Compile Include="moneyball_ml_python\training\model_trainer.py" />
-    <Compile Include="moneyball_ml_python\utils\edge_calculator.py" />
-    <Compile Include="moneyball_ml_python\utils\__init__.py" />
     <Compile Include="moneyball_ml_python\__init__.py" />
     <Compile Include="moneyball_ml_python\app.py" />
     <Compile Include="moneyball_ml_python\prediction\predict.py" />
@@ -86,7 +84,6 @@
     <Folder Include="moneyball_ml_python\" />
     <Folder Include="models\" />
     <Folder Include="moneyball_ml_python\data\" />
-    <Folder Include="moneyball_ml_python\utils\" />
     <Folder Include="moneyball_ml_python\prediction\" />
     <Folder Include="moneyball_ml_python\training\" />
     <Folder Include="tests\" />

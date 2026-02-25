@@ -76,8 +76,8 @@ def main():
     logger.info("STEP 1: Loading Training Data")
     logger.info("=" * 80)
     
-    # Acceptance Criteria: Supports SportsRadar API or CSV
-    df = load_training_data(source="synthetic")  # Can be "csv" or "sportsradar"
+    # Acceptance Criteria: Supports Moneyball API or CSV
+    df = load_training_data(source="synthetic")  # Can be "csv" or "moneyball"
     validate_training_data(df)
     
     logger.info(f"Loaded {len(df)} training samples")

@@ -144,7 +144,7 @@ class PredictionService:
         - Uses prepare_features to map dict to numpy array
         
         Args:
-            version: Model version (e.g., "v1", "NBA_LogReg_v1")
+            version: Model version (e.g., "first_team_to_20", "home_cover")
             features: Dict of feature names to values
             
         Returns:

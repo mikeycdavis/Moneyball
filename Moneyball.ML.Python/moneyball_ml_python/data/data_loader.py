@@ -3,10 +3,10 @@ Data loader for NBA training data.
 
 Supports loading from:
 - CSV files (for testing)
-- SportsRadar API (for production)
+- Moneyball API (for production)
 
 Acceptance Criteria:
-- Pulls historical NBA data from SportsRadar API
+- Pulls historical NBA data from Moneyball API
 - Or loads CSV data locally for testing
 - Data includes: Games, Team stats, Player stats, Betting lines and odds
 """
@@ -31,12 +31,12 @@ def load_training_data(
     Load training data from specified source.
     
     Acceptance Criteria:
-    - Supports pulling from SportsRadar API
+    - Supports pulling from Moneyball API
     - Supports loading CSV locally
     - Returns data with all necessary columns
     
     Args:
-        source: Data source ("synthetic", "csv", "sportsradar")
+        source: Data source ("synthetic", "csv", "moneyball")
         filepath: Path to CSV file (if source="csv")
         start_date: Start date for data (YYYY-MM-DD)
         end_date: End date for data (YYYY-MM-DD)
@@ -52,8 +52,8 @@ def load_training_data(
         if not filepath:
             raise ValueError("filepath required when source='csv'")
         df = load_from_csv(filepath)
-    elif source == "sportsradar":
-        df = load_from_sportsradar(start_date, end_date)
+    elif source == "moneyball":
+        df = load_from_moneyball(start_date, end_date)
     else:
         raise ValueError(f"Unsupported data source: {source}")
     
@@ -194,14 +194,14 @@ def load_from_csv(filepath: str) -> pd.DataFrame:
     return df
 
 
-def load_from_sportsradar(
+def load_from_moneyball(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None
 ) -> pd.DataFrame:
     """
-    Load training data from SportsRadar API.
+    Load training data from Moneyball API.
     
-    Acceptance Criteria: Pulls historical NBA data from SportsRadar API
+    Acceptance Criteria: Pulls historical NBA data from Moneyball API
     
     Args:
         start_date: Start date (YYYY-MM-DD)
@@ -211,20 +211,20 @@ def load_from_sportsradar(
         DataFrame with training data
         
     Note: This is a placeholder. Full implementation would:
-    1. Import SportsRadar client
+    1. Import Moneyball client
     2. Fetch games, team stats, player stats, odds
     3. Join data into training format
     4. Handle rate limiting and pagination
     """
-    logger.info("Loading data from SportsRadar API...")
+    logger.info("Loading data from Moneyball API...")
     logger.warning(
-        "SportsRadar integration not yet implemented. "
+        "Moneyball integration not yet implemented. "
         "Using synthetic data instead."
     )
     
-    # TODO: Implement SportsRadar API integration
-    # from moneyball_ml_python.data.sportsradar_client import SportsRadarClient
-    # client = SportsRadarClient()
+    # TODO: Implement Moneyball API integration
+    # from moneyball_ml_python.data.moneyball_client import MoneyballClient
+    # client = MoneyballClient()
     # games = client.get_games(start_date, end_date)
     # team_stats = client.get_team_stats(start_date, end_date)
     # player_stats = client.get_player_stats(start_date, end_date)

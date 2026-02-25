@@ -5,19 +5,23 @@ Flask application for serving ML model predictions.
 from flask import Flask, request, jsonify
 from moneyball_ml_python.prediction.predict import PredictionService
 import logging
+import sys
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
+app.config['JSON_SORT_KEYS'] = False
 
 # Initialize prediction service
-service = PredictionService(models_dir="models")
+# These will be initialized in main()
+prediction_service: PredictionService = None
 
 
 @app.route('/predict/<version>', methods=['POST'])
@@ -31,10 +35,11 @@ def predict(version):
     
     Request body:
     {
-        "HomeWinRate": 0.65,
-        "AwayWinRate": 0.35,
-        "HomePointsAvg": 110.0,
-        "AwayPointsAvg": 95.0
+        "features": {
+            "home_offensive_rating": 115.2,
+            "away_offensive_rating": 112.1,
+            ...
+        }
     }
     
     Response (200 OK):
@@ -52,20 +57,29 @@ def predict(version):
         "available_models": ["v1", "v2", "v3"]
     }
     """
-    # Get features from request body
-    features = request.get_json()
+    if not prediction_service:
+        return jsonify({'error': 'Prediction service not initialized'}), 500
+
+    # Get data from request body
+    data = request.get_json()
+    
+    if not data or 'features' not in data:
+        return jsonify({'error': 'Missing features in request body'}), 400
+
+    # Get features from data
+    features = data['features']
     
     if not features:
-        return jsonify({"error": "No features provided"}), 400
+        return jsonify({'error': 'Missing features in request body'}), 400
     
     # Make prediction
-    result = service.predict(version, features)
+    result = prediction_service.predict(version, features)
     
     # Check if model was found (Acceptance Criteria: 404 if not found)
     if result is None:
         return jsonify({
             "error": f"Model {version} not found",
-            "available_models": service.get_loaded_models()
+            "available_models": prediction_service.get_loaded_models()
         }), 404
     
     # Return prediction result (Acceptance Criteria: < 200ms)
@@ -83,7 +97,10 @@ def list_models():
         "count": 3
     }
     """
-    models = service.get_loaded_models()
+    if not prediction_service:
+        return jsonify({'error': 'Prediction service not initialized'}), 500
+
+    models = prediction_service.get_loaded_models()
     return jsonify({
         "models": models,
         "count": len(models)
@@ -111,10 +128,16 @@ def get_model(version):
         "error": "Model v99 not found"
     }
     """
-    info = service.get_model_info(version)
+    if not prediction_service:
+        return jsonify({'error': 'Prediction service not initialized'}), 500
+
+    info = prediction_service.get_model_info(version)
     
     if info is None:
-        return jsonify({"error": f"Model {version} not found"}), 404
+        return jsonify({
+            'error': f'Model {version} not found',
+            'available_models': prediction_service.get_loaded_models()
+        }), 404
     
     return jsonify(info), 200
 
@@ -134,7 +157,7 @@ def health():
     return jsonify({
         "status": "healthy",
         "service": "moneyball-ml-python",
-        "models_loaded": len(service.get_loaded_models())
+        'models_loaded': len(prediction_service.get_loaded_models()) if prediction_service else 0
     }), 200
 
 
@@ -145,12 +168,20 @@ def main():
     
     Acceptance Criteria: Loads all IsActive models at startup
     """
+    global prediction_service, odds_service
+
     logger.info("Starting Moneyball ML Python service...")
     
+    # Initialize prediction service with odds service
+    prediction_service = PredictionService(
+        models_dir="models"
+    )
+    
     # Load models at startup (Acceptance Criteria)
-    service.load_models()
+    prediction_service.load_models()
     
     # Run Flask server
+    logger.info("Starting Flask server on port 5001...")
     app.run(
         host="0.0.0.0",
         port=5001,
