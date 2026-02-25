@@ -40,9 +40,9 @@ def test_prepare_features_with_expected_order(service):
     # Assert - Should be numpy array
     assert isinstance(result, np.ndarray)
     assert result.shape == (1, 3)
-    assert result[0][0] == 0.65
-    assert result[0][1] == 0.35
-    assert result[0][2] == 110.0
+    assert result[0][0] == pytest.approx(0.65)
+    assert result[0][1] == pytest.approx(0.35)
+    assert result[0][2] == pytest.approx(110.0)
 
 
 def test_prepare_features_missing_feature_uses_default(service):
@@ -62,7 +62,7 @@ def test_prepare_features_missing_feature_uses_default(service):
     
     # Assert - Missing feature should be 0.0
     assert result.shape == (1, 3)
-    assert result[0][2] == 0.0
+    assert result[0][2] == pytest.approx(0.0)
 
 
 def test_prepare_features_without_expected_order(service):
@@ -81,9 +81,9 @@ def test_prepare_features_without_expected_order(service):
     
     # Assert - Should be alphabetical order
     assert result.shape == (1, 3)
-    assert result[0][0] == 1.0  # AFeature
-    assert result[0][1] == 2.0  # MFeature
-    assert result[0][2] == 3.0  # ZFeature
+    assert result[0][0] == pytest.approx(1.0)  # AFeature
+    assert result[0][1] == pytest.approx(2.0)  # MFeature
+    assert result[0][2] == pytest.approx(3.0)  # ZFeature
 
 
 def test_predict_model_not_found_returns_none(service):
