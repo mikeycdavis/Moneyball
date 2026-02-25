@@ -150,3 +150,8 @@ build/
 develop-eggs/
 dist/
 *.egg-info/
+
+# Pyhon ML Models
+Moneyball.ML.Python/models/*.pkl
+Moneyball.ML.Python/models/*.joblib
+Moneyball.ML.Python/models/*.json

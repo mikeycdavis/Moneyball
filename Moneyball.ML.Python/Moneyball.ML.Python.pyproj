@@ -33,11 +33,18 @@
     <Compile Include="moneyball_ml_python\__init__.py" />
     <Compile Include="moneyball_ml_python\app.py" />
     <Compile Include="moneyball_ml_python\prediction_service.py" />
+    <Compile Include="tests\test_train.py" />
     <Compile Include="tests\test_prediction_service.py" />
     <Compile Include="tests\__init__.py" />
     <Compile Include="tests\test_app.py" />
+    <Compile Include="training\__init__.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="models\NBA_LogReg_v1.json" />
+    <Content Include="models\NBA_LogReg_v1.pkl" />
+    <Content Include="models\v1.json" />
+    <Content Include="models\v1.pkl" />
+    <Content Include="training\train.py" />
     <Content Include="pyproject.toml" />
     <Content Include="README.md" />
     <Content Include="requirements.txt" />
@@ -55,6 +62,8 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="moneyball_ml_python\" />
+    <Folder Include="models\" />
+    <Folder Include="training\" />
     <Folder Include="tests\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.Web.targets" />

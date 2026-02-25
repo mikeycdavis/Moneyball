@@ -131,9 +131,12 @@ ls -la dist/
 - flask>=3.0.0
 - pandas>=2.0.0
 - numpy>=1.24.0
+- scikit-learn>=1.3.0
+- joblib>=1.3.0
 
 ### Development (install with `pip install -e ".[dev]"`)
-- pytest>=7.4.0
+- pytest>=8.0.0
+- pytest-cov>=5.0.0
 
 ### Build-only (needed for `python -m build`)
 - build
