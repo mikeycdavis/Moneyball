@@ -145,13 +145,14 @@ class TestTrainModel:
         
         # Create a mock unsupported model type
         with patch('moneyball_ml_python.training.model_trainer.ModelType') as mock_type:
-            mock_type.UNSUPPORTED = 'unsupported'
+            mock_member = MagicMock
+            mock_member.value = 'unsupported'
             
             # Act & Assert: Should raise ValueError
             with pytest.raises(ValueError, match="Unsupported model type"):
                 train_model(
                     X_train, y_train, X_val, y_val,
-                    'unsupported',
+                    mock_member,
                     {}
                 )
     

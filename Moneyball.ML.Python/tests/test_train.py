@@ -34,6 +34,13 @@ from moneyball_ml_python.training.train import (
 )
 from moneyball_ml_python.training.model_config import ModelConfig, ModelType, FeatureGroup
 
+class FakeModel:
+    def predict_proba(self, X):
+        return np.array([[0.3, 0.7]])
+
+    def predict(self, X):
+        return np.array([0.7])
+
 
 # ====================
 # Fixtures
@@ -105,8 +112,7 @@ def mock_training_result():
     Returns:
         dict: Training result
     """
-    mock_model = Mock()
-    mock_model.predict_proba = Mock(return_value=np.array([[0.3, 0.7]]))
+    mock_model = FakeModel()
     
     return {
         'model_name': 'test_model',
@@ -117,8 +123,8 @@ def mock_training_result():
             'model_type': 'logistic_regression',
             'target': 'home_win',
             'feature_groups': ['team_stats'],
-            'feature_list': ['feat1', 'feat2', 'feat3'],
-            'feature_importance': {'feat1': 0.5, 'feat2': 0.3, 'feat3': 0.2},
+            'feature_list': ['home_offensive_rating', 'away_offensive_rating', 'home_win'],
+            'feature_importance': {'home_offensive_rating': 0.5, 'away_offensive_rating': 0.3, 'home_win': 0.2},
             'training_timestamp': '2024-01-01T00:00:00',
             'git_commit_sha': 'abc123',
             'python_version': '3.11.0',
@@ -130,13 +136,13 @@ def mock_training_result():
                 'recall': 0.82
             },
             'is_active': True,
-            'expected_features': ['feat1', 'feat2', 'feat3']
+            'expected_features': ['home_offensive_rating', 'away_offensive_rating', 'home_win']
         },
         'metrics': {
             'accuracy': 0.85,
             'auc': 0.90
         },
-        'feature_columns': ['feat1', 'feat2', 'feat3'],
+        'feature_columns': ['home_offensive_rating', 'away_offensive_rating', 'home_win'],
         'status': 'success'
     }
 
@@ -308,12 +314,12 @@ class TestTrainSingleModel:
         """Test that function returns complete training result."""
         # Arrange: Mock all steps
         mock_prepare.return_value = sample_dataframe
-        mock_get_cols.return_value = ['feat1', 'feat2']
+        mock_get_cols.return_value = [ 'home_offensive_rating', 'away_offensive_rating' ]
         
         mock_model = Mock()
         mock_metrics = {'accuracy': 0.85, 'auc': 0.90}
         mock_train.return_value = (mock_model, mock_metrics)
-        mock_importance.return_value = {'feat1': 0.6, 'feat2': 0.4}
+        mock_importance.return_value = {'home_offensive_rating': 0.6, 'away_offensive_rating': 0.4}
         
         # Act: Train model
         result = train_single_model(
@@ -352,7 +358,7 @@ class TestTrainSingleModel:
         """
         # Arrange
         mock_prepare.return_value = sample_dataframe
-        mock_get_cols.return_value = ['feat1', 'feat2']
+        mock_get_cols.return_value = [ 'home_offensive_rating', 'away_offensive_rating' ]
         mock_train.return_value = (Mock(), {'accuracy': 0.85})
         mock_importance.return_value = {}
         
@@ -390,7 +396,7 @@ class TestTrainSingleModel:
         """
         # Arrange
         mock_prepare.return_value = sample_dataframe
-        mock_get_cols.return_value = ['feat1', 'feat2']
+        mock_get_cols.return_value = [ 'home_offensive_rating', 'away_offensive_rating' ]
         mock_train.return_value = (Mock(), {'accuracy': 0.85})
         mock_importance.return_value = {}
         
@@ -427,7 +433,7 @@ class TestTrainSingleModel:
         """
         # Arrange
         mock_prepare.return_value = sample_dataframe
-        mock_get_cols.return_value = ['feat1', 'feat2']
+        mock_get_cols.return_value = [ 'home_offensive_rating', 'away_offensive_rating' ]
         mock_train.return_value = (Mock(), {'accuracy': 0.85})
         mock_importance.return_value = {}
         
@@ -462,9 +468,9 @@ class TestTrainSingleModel:
         """
         # Arrange
         mock_prepare.return_value = sample_dataframe
-        mock_get_cols.return_value = ['feat1', 'feat2']
+        mock_get_cols.return_value = [ 'home_offensive_rating', 'away_offensive_rating' ]
         mock_train.return_value = (Mock(), {'accuracy': 0.85})
-        mock_importance.return_value = {'feat1': 0.5}
+        mock_importance.return_value = {'home_offensive_rating': 0.5}
         
         # Act: Train model
         result = train_single_model(
@@ -502,7 +508,7 @@ class TestTrainSingleModel:
         """Test that model is marked as active for prediction service."""
         # Arrange
         mock_prepare.return_value = sample_dataframe
-        mock_get_cols.return_value = ['feat1', 'feat2']
+        mock_get_cols.return_value = [ 'home_offensive_rating', 'away_offensive_rating' ]
         mock_train.return_value = (Mock(), {'accuracy': 0.85})
         mock_importance.return_value = {}
         
@@ -590,12 +596,12 @@ class TestSaveModel:
         # Arrange: Two different models
         result1 = {
             'model_name': 'model1',
-            'model': Mock(),
+            'model': FakeModel(),
             'metadata': {'model_name': 'model1', 'feature_importance': {}}
         }
         result2 = {
             'model_name': 'model2',
-            'model': Mock(),
+            'model': FakeModel(),
             'metadata': {'model_name': 'model2', 'feature_importance': {}}
         }
         
@@ -614,7 +620,7 @@ class TestSaveModel:
         # Arrange: Result with many features
         result = {
             'model_name': 'test_model',
-            'model': Mock(),
+            'model': FakeModel(),
             'metadata': {
                 'model_name': 'test_model',
                 'feature_importance': {f'feat{i}': i/200 for i in range(200)}
@@ -727,10 +733,10 @@ class TestTrainIntegration:
         """Test complete train and save workflow."""
         # Arrange
         mock_prepare.return_value = sample_dataframe
-        mock_get_cols.return_value = ['feat1', 'feat2']
-        mock_model = Mock()
+        mock_get_cols.return_value = [ 'home_offensive_rating', 'away_offensive_rating' ]
+        mock_model = FakeModel()
         mock_train.return_value = (mock_model, {'accuracy': 0.85})
-        mock_importance.return_value = {'feat1': 0.5}
+        mock_importance.return_value = {'home_offensive_rating': 0.5}
         
         # Act: Train and save
         result = train_single_model(
