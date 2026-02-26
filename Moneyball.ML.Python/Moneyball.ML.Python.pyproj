@@ -43,6 +43,7 @@
     <Compile Include="moneyball_ml_python\__init__.py" />
     <Compile Include="moneyball_ml_python\app.py" />
     <Compile Include="moneyball_ml_python\prediction\predict.py" />
+    <Compile Include="tests\test_data_loader.py" />
     <Compile Include="tests\test_train.py" />
     <Compile Include="tests\test_predict.py" />
     <Compile Include="tests\__init__.py" />

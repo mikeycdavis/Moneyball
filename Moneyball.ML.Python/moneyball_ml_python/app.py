@@ -60,6 +60,9 @@ def predict(version):
     if not prediction_service:
         return jsonify({'error': 'Prediction service not initialized'}), 500
 
+    if request.content_length in (None, 0):
+        return jsonify({'error': 'Missing request body'}), 400
+
     # Get data from request body
     data = request.get_json()
     

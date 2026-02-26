@@ -13,6 +13,7 @@ Acceptance Criteria:
 
 import logging
 import pandas as pd
+from pandas.errors import EmptyDataError
 import numpy as np
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -187,7 +188,10 @@ def load_from_csv(filepath: str) -> pd.DataFrame:
     if not Path(filepath).exists():
         raise FileNotFoundError(f"CSV file not found: {filepath}")
     
-    df = pd.read_csv(filepath)
+    try:
+        df = pd.read_csv(filepath)
+    except EmptyDataError:
+        df = pd.DataFrame()  # fallback to empty dataframe
     
     logger.info(f"Loaded {len(df)} rows from CSV")
     
