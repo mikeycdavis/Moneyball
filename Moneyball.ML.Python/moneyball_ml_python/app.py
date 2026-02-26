@@ -21,7 +21,7 @@ app.config['JSON_SORT_KEYS'] = False
 
 # Initialize prediction service
 # These will be initialized in main()
-prediction_service: PredictionService = None
+prediction_service: PredictionService = PredictionService(models_dir="models")
 
 
 @app.route('/predict/<version>', methods=['POST'])
@@ -57,9 +57,6 @@ def predict(version):
         "available_models": ["v1", "v2", "v3"]
     }
     """
-    if not prediction_service:
-        return jsonify({'error': 'Prediction service not initialized'}), 500
-
     if request.content_length in (None, 0):
         return jsonify({'error': 'Missing request body'}), 400
 
@@ -100,9 +97,6 @@ def list_models():
         "count": 3
     }
     """
-    if not prediction_service:
-        return jsonify({'error': 'Prediction service not initialized'}), 500
-
     models = prediction_service.get_loaded_models()
     return jsonify({
         "models": models,
@@ -131,9 +125,6 @@ def get_model(version):
         "error": "Model v99 not found"
     }
     """
-    if not prediction_service:
-        return jsonify({'error': 'Prediction service not initialized'}), 500
-
     info = prediction_service.get_model_info(version)
     
     if info is None:
@@ -171,14 +162,7 @@ def main():
     
     Acceptance Criteria: Loads all IsActive models at startup
     """
-    global prediction_service, odds_service
-
     logger.info("Starting Moneyball ML Python service...")
-    
-    # Initialize prediction service with odds service
-    prediction_service = PredictionService(
-        models_dir="models"
-    )
     
     # Load models at startup (Acceptance Criteria)
     prediction_service.load_models()
