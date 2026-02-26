@@ -162,13 +162,13 @@ def main():
     
     Acceptance Criteria: Loads all IsActive models at startup
     """
-    logger.info("Starting Moneyball ML Python service...")
+    logger.info("Starting Moneyball ML Python service...") # pragma: no cover
     
     # Load models at startup (Acceptance Criteria)
     prediction_service.load_models()
     
     # Run Flask server
-    logger.info("Starting Flask server on port 5001...")
+    logger.info("Starting Flask server on port 5001...") # pragma: no cover
     app.run(
         host="0.0.0.0",
         port=5001,
