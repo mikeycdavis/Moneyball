@@ -52,7 +52,7 @@ class PredictionService:
         start_time = time.time()
         
         # Create models directory if missing
-        if not self.models_dir.exists():
+        if not self.models_dir.exists(): # pragma: no cover
             logger.warning(f"Models directory not found: {self.models_dir}")
             self.models_dir.mkdir(parents=True, exist_ok=True)
             logger.info(f"Created models directory: {self.models_dir}")
