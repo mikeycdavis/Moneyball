@@ -169,7 +169,7 @@ def main():
     
     # Run Flask server
     logger.info("Starting Flask server on port 5001...") # pragma: no cover
-    app.run(
+    app.run( # pragma: no cover
         host="0.0.0.0",
         port=5001,
         debug=True
