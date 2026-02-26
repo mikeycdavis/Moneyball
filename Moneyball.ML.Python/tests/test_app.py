@@ -82,6 +82,9 @@ def mock_prediction_service():
         }
     }
     
+    service.load_models()
+    service.load_models.assert_called_once()
+    
     return service
 
 
