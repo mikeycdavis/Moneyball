@@ -1,4 +1,4 @@
-“””
+"""
 Unit tests for feature_engineering.py
 
 Tests all feature engineering functions:
@@ -18,7 +18,7 @@ Test Structure:
 - Test acceptance criteria
 - Test edge cases
 - Test data transformations
-“””
+"""
 
 import pytest
 import pandas as pd
