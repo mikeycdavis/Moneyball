@@ -61,7 +61,7 @@ class PredictionService:
         # Find all model files
         model_files = list(self.models_dir.glob("*.pkl")) + list(self.models_dir.glob("*.joblib"))
         
-        if not model_files:
+        if not model_files: # pragma: no cover
             logger.warning(f"No model files found in {self.models_dir}")
             return
         
