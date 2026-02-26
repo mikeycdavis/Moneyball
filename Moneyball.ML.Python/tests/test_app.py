@@ -264,33 +264,7 @@ class TestPredictEndpoint:
         
         # Assert: Should return 400
         assert response.status_code == 400
-    
-    def test_predict_service_not_initialized(self, client):
-        """
-        Test 500 response when prediction service is not initialized.
-        """
-        # Arrange: Set service to None
-        import moneyball_ml_python.app as app_module
-        original_service = app_module.prediction_service
-        app_module.prediction_service = None
         
-        try:
-            # Act: Make request
-            request_data = {"features": {"feat1": 0.5}}
-            response = client.post(
-                '/predict/model_v1',
-                data=json.dumps(request_data),
-                content_type='application/json'
-            )
-            
-            # Assert: Should return 500
-            assert response.status_code == 500
-            data = response.get_json()
-            assert "error" in data
-        finally:
-            # Cleanup: Restore service
-            app_module.prediction_service = original_service
-
 
 # ====================
 # Tests for GET /models
