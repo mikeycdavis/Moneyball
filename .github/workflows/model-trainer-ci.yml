@@ -16,8 +16,8 @@ jobs:
       checks: write
 
     env:
-      COVERAGE_THRESHOLD: 1
-      COVERAGE_THRESHOLD_WARNING: 0
+      COVERAGE_THRESHOLD: 95
+      COVERAGE_THRESHOLD_WARNING: 80
 
     strategy:
       matrix:
