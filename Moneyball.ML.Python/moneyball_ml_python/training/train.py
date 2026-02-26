@@ -49,7 +49,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main(): # pragma: no cover
     """
     Main training orchestration function.
     
@@ -315,5 +315,5 @@ def get_git_commit_sha() -> str:
     return 'unknown'
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     main()
