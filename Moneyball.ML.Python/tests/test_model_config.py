@@ -18,7 +18,7 @@ Test Structure:
 - Test model configurations
 - Test helper functions
 - Test acceptance criteria compliance
-  “””
+“””
 
 import pytest
 from typing import List
