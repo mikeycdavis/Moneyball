@@ -1,4 +1,4 @@
-“””
+"""
 Unit tests for model_trainer.py
 
 Tests all model training functions:
@@ -17,7 +17,7 @@ Test Structure:
 - Test acceptance criteria
 - Test error handling
 - Test feature importance extraction
-“””
+"""
 
 import pytest
 import numpy as np
@@ -47,7 +47,7 @@ from moneyball_ml_python.training.model_config import ModelType
 
 @pytest.fixture
 def sample_training_data():
-“””
+"""
 Create sample training data for testing.
 
 ```
@@ -69,7 +69,7 @@ return X_train, y_train, X_val, y_val
 
 @pytest.fixture
 def sample_hyperparameters():
-“””
+"""
 Create sample hyperparameters.
 
 ```
@@ -89,7 +89,7 @@ return {
 # ====================
 
 class TestTrainModel:
-“””
+"""
 Tests for main train_model() function.
 
 ```
