@@ -1,4 +1,4 @@
-“””
+"""
 Unit tests for model_config.py
 
 Tests the model configuration module:
@@ -18,7 +18,7 @@ Test Structure:
 - Test model configurations
 - Test helper functions
 - Test acceptance criteria compliance
-“””
+"""
 
 import pytest
 from typing import List
