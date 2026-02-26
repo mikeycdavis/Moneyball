@@ -155,21 +155,21 @@ def health():
     }), 200
 
 
-def main():
+def main(): # pragma: no cover
     """
     Main entry point for the application.
     Called when running: moneyball-ml
     
     Acceptance Criteria: Loads all IsActive models at startup
     """
-    logger.info("Starting Moneyball ML Python service...") # pragma: no cover
+    logger.info("Starting Moneyball ML Python service...")
     
     # Load models at startup (Acceptance Criteria)
     prediction_service.load_models()
     
     # Run Flask server
-    logger.info("Starting Flask server on port 5001...") # pragma: no cover
-    app.run( # pragma: no cover
+    logger.info("Starting Flask server on port 5001...")
+    app.run(
         host="0.0.0.0",
         port=5001,
         debug=True
