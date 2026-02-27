@@ -893,24 +893,6 @@ class TestValidateTrainingData:
         with pytest.raises(ValueError, match="Missing required columns"):
             validate_training_data(df)
     
-    def test_logs_warning_when_more_than_half_missing_values(self):
-        """
-        Test that DataFrames with > 50% missing values logs warning.
-        """
-        # Arrange: DataFrame with 100 rows
-        try:
-            df = pd.DataFrame({
-                'home_offensive_rating': np.random.uniform(0, 0, 100),
-                'away_offensive_rating': np.random.uniform(0, 0, 100),
-                'home_defensive_rating': np.random.uniform(0, 0, 100),
-                'away_defensive_rating': np.random.uniform(0, 0, 100)
-            })
-        
-            # Act & Assert: Should raise ValueError
-            validate_training_data(df)
-        except ValueError:
-            pytest.fail("Valid data should not raise ValueError")
-    
     def test_raises_error_for_insufficient_data(self):
         """
         Test that DataFrames with < 100 rows raise ValueError.

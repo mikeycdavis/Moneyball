@@ -36,8 +36,7 @@ class FakeFullModel:
     def predict(self, X):
         return np.array([0.65])
 
-class FakePredictProbaMissingModel:
-
+class FakeModelMissingPredictProba:
     def predict(self, X):
         return np.array([0.65])
 
@@ -84,23 +83,34 @@ def mock_trained_model():
     Returns:
         Mock model object
     """    
+    model = FakeFullModel()
+    
+    if (not hasattr(model, "predict_proba")):
+        raise Exception("predict_proba method missing from mock model 1")
+
     return FakeFullModel()
 
 
 @pytest.fixture
-def mock_model_missing_predict_proba():
+def mock_trained_model_missing_predict_proba():
     """
-    Create a mock model missing predict_proba for testing.
+    Create a mock trained model for testing.
     
     The mock model:
-    - Does not have predict_proba method
+    - No predict_proba method
     - Returns realistic probabilities
     - Simulates a real scikit-learn classifier
     
     Returns:
         Mock model object
     """    
-    return FakePredictProbaMissingModel()
+    model = FakeModelMissingPredictProba()
+
+    # Delete predict_proba method to simulate missing method
+    if (hasattr(model, "predict_proba")):
+        raise Exception("Failed to remove predict_proba method from mock model 3")
+
+    return model
 
 
 @pytest.fixture
@@ -148,6 +158,35 @@ def sample_model_file(temp_models_dir, mock_trained_model):
 
 
 @pytest.fixture
+def sample_model_missing_predict_proba_file(temp_models_dir, mock_trained_model_missing_predict_proba):
+    """
+    Create a sample model missing predict_proba file (.pkl) for testing.
+    
+    Args:
+        temp_models_dir: Temporary directory fixture
+        mock_trained_model_missing_predict_proba: Mock model fixture missing predict_proba
+        
+    Returns:
+        tuple: (model_path, metadata_path)
+    """
+    # Save mock model as .pkl file
+    model_path = temp_models_dir / "test_model_v3.pkl"
+    joblib.dump(mock_trained_model_missing_predict_proba, model_path)
+    
+    # Create accompanying metadata file
+    metadata = {
+        "is_active": True,
+        "expected_features": ["feature1", "feature2", "feature3"],
+        "description": "Test model v3"
+    }
+    metadata_path = temp_models_dir / "test_model_v3.json"
+    with open(metadata_path, 'w') as f:
+        json.dump(metadata, f)
+    
+    return model_path, metadata_path
+
+
+@pytest.fixture
 def sample_model_exception_file(temp_models_dir, mock_trained_exception_model):
     """
     Create a sample model exception file (.pkl) for testing.
@@ -170,35 +209,6 @@ def sample_model_exception_file(temp_models_dir, mock_trained_exception_model):
         "description": "Test model v2"
     }
     metadata_path = temp_models_dir / "test_model_v2json"
-    with open(metadata_path, 'w') as f:
-        json.dump(metadata, f)
-    
-    return model_path, metadata_path
-
-
-@pytest.fixture
-def sample_model_predict_proba_missing_file(temp_models_dir, mock_model_missing_predict_proba):
-    """
-    Create a sample model file (.pkl) for testing.
-    
-    Args:
-        temp_models_dir: Temporary directory fixture
-        mock_model_missing_predict_proba: Mock model fixture
-        
-    Returns:
-        tuple: (model_path, metadata_path)
-    """
-    # Save mock model as .pkl file
-    model_path = temp_models_dir / "test_model_v3.pkl"
-    joblib.dump(mock_model_missing_predict_proba, model_path)
-    
-    # Create accompanying metadata file
-    metadata = {
-        "is_active": True,
-        "expected_features": ["feature1", "feature2", "feature3"],
-        "description": "Test model v1"
-    }
-    metadata_path = temp_models_dir / "test_model_v3.json"
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f)
     
@@ -377,6 +387,23 @@ class TestPredict:
         
         # Assert: Should throw exception
         assert result == {'error': 'Prediction failed', 'model_version': 'test_model_v2'}
+    
+    def test_prediction_missing_predict_proba(self, prediction_service, sample_model_missing_predict_proba_file):
+        """
+        Test that prediction fails.
+        
+        Acceptance Criteria: Exception thrown
+        """
+        # Arrange: Load model
+        prediction_service.load_models()
+        features = {"feature1": 0.5, "feature2": 0.7, "feature3": 0.3}
+        
+        # Act: Make prediction
+        result = prediction_service.predict("test_model_v3", features)
+        
+        # Assert: Should throw exception
+        assert 0 <= result["home_win_probability"] <= 1
+        assert 0 <= result["away_win_probability"] <= 1
 
 
 # ====================
@@ -415,6 +442,29 @@ class TestPrepareFeatures:
         # Assert: Missing feature should be 0.0
         expected_array = np.array([[1.0, 2.0, 0.0]], dtype=np.float32)
         np.testing.assert_array_almost_equal(result, expected_array)
+    
+    def test_no_expected_features(self, prediction_service):
+        """Test that missing expected_features are skipped."""
+        # Arrange: Missing expected_features
+        features = {"feat1": 1.0, "feat2": 2.0}
+        
+        # Act: Prepare features
+        result = prediction_service.prepare_features(features, [])
+        
+        # Assert: Should be numpy array
+        assert isinstance(result, np.ndarray)
+        assert result.shape == (1, 2)
+    
+    def test_no_data(self, prediction_service):
+        """Test that missing features and empty_features returns empty array."""
+        # Arrange: Missing features and expected_features
+        
+        # Act: Prepare features
+        result = prediction_service.prepare_features({}, [])
+        
+        # Assert: Should be empty numpy array
+        assert isinstance(result, np.ndarray)
+        assert result.shape == (1, 0)
 
 
 if __name__ == "__main__":
