@@ -1,6 +1,9 @@
 # Web Framework
 flask>=3.0.0
 
+# API
+requests>=2.31.0
+
 # Numerical Processing
 numpy>=2.0.0; python_version >= "3.10"
 numpy>=1.24,<2.0; python_version < "3.10"
