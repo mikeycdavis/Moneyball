@@ -186,7 +186,7 @@ class PredictionService:
             prediction_time_ms = (time.time() - start_time) * 1000
             
             # Log if slow
-            if prediction_time_ms > 200:
+            if prediction_time_ms > 200: # pragma: no cover
                 logger.warning(
                     f"SLOW: {version} took {prediction_time_ms:.2f}ms (target: <200ms)"
                 )

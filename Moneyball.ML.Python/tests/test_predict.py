@@ -29,12 +29,24 @@ from unittest.mock import Mock, patch
 # Import the class to test
 from moneyball_ml_python.prediction.predict import PredictionService
 
-class FakeModel:
+class FakeFullModel:
     def predict_proba(self, X):
         return np.array([[0.35, 0.65]])
 
     def predict(self, X):
         return np.array([0.65])
+
+class FakePredictProbaMissingModel:
+
+    def predict(self, X):
+        return np.array([0.65])
+
+class FakeFullModelWithException:
+    def predict_proba(self, X):
+        raise Exception("Prediction failed")
+
+    def predict(self, X):
+        raise Exception("Prediction failed")
 
 
 # ====================
@@ -72,7 +84,38 @@ def mock_trained_model():
     Returns:
         Mock model object
     """    
-    return FakeModel()
+    return FakeFullModel()
+
+
+@pytest.fixture
+def mock_model_missing_predict_proba():
+    """
+    Create a mock model missing predict_proba for testing.
+    
+    The mock model:
+    - Does not have predict_proba method
+    - Returns realistic probabilities
+    - Simulates a real scikit-learn classifier
+    
+    Returns:
+        Mock model object
+    """    
+    return FakePredictProbaMissingModel()
+
+
+@pytest.fixture
+def mock_trained_exception_model():
+    """
+    Create a mock trained exception model for testing.
+    
+    The mock model:
+    - Has predict_proba method
+    - Throws exceptions
+    
+    Returns:
+        Mock model exception object
+    """    
+    return FakeFullModelWithException()
 
 
 @pytest.fixture
@@ -98,6 +141,64 @@ def sample_model_file(temp_models_dir, mock_trained_model):
         "description": "Test model v1"
     }
     metadata_path = temp_models_dir / "test_model_v1.json"
+    with open(metadata_path, 'w') as f:
+        json.dump(metadata, f)
+    
+    return model_path, metadata_path
+
+
+@pytest.fixture
+def sample_model_exception_file(temp_models_dir, mock_trained_exception_model):
+    """
+    Create a sample model exception file (.pkl) for testing.
+    
+    Args:
+        temp_models_dir: Temporary directory fixture
+        mock_trained_exception_model: Mock model exception fixture
+        
+    Returns:
+        tuple: (model_path, metadata_path)
+    """
+    # Save mock model as .pkl file
+    model_path = temp_models_dir / "test_model_v2.pkl"
+    joblib.dump(mock_trained_exception_model, model_path)
+    
+    # Create accompanying metadata file
+    metadata = {
+        "is_active": True,
+        "expected_features": ["feature1", "feature2", "feature3"],
+        "description": "Test model v2"
+    }
+    metadata_path = temp_models_dir / "test_model_v2json"
+    with open(metadata_path, 'w') as f:
+        json.dump(metadata, f)
+    
+    return model_path, metadata_path
+
+
+@pytest.fixture
+def sample_model_predict_proba_missing_file(temp_models_dir, mock_model_missing_predict_proba):
+    """
+    Create a sample model file (.pkl) for testing.
+    
+    Args:
+        temp_models_dir: Temporary directory fixture
+        mock_model_missing_predict_proba: Mock model fixture
+        
+    Returns:
+        tuple: (model_path, metadata_path)
+    """
+    # Save mock model as .pkl file
+    model_path = temp_models_dir / "test_model_v3.pkl"
+    joblib.dump(mock_model_missing_predict_proba, model_path)
+    
+    # Create accompanying metadata file
+    metadata = {
+        "is_active": True,
+        "expected_features": ["feature1", "feature2", "feature3"],
+        "description": "Test model v1"
+    }
+    metadata_path = temp_models_dir / "test_model_v3.json"
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f)
     
@@ -260,6 +361,22 @@ class TestPredict:
         
         # Assert: Should complete in < 200ms
         assert result["prediction_time_ms"] < 200
+    
+    def test_prediction_fails(self, prediction_service, sample_model_exception_file):
+        """
+        Test that prediction fails.
+        
+        Acceptance Criteria: Exception thrown
+        """
+        # Arrange: Load model
+        prediction_service.load_models()
+        features = {"feature1": 0.5, "feature2": 0.7, "feature3": 0.3}
+        
+        # Act: Make prediction
+        result = prediction_service.predict("test_model_v2", features)
+        
+        # Assert: Should throw exception
+        assert result == {'error': 'Prediction failed', 'model_version': 'test_model_v2'}
 
 
 # ====================
