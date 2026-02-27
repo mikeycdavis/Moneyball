@@ -51,13 +51,6 @@ class PredictionService:
         logger.info("Starting model loading...")
         start_time = time.time()
         
-        # Create models directory if missing
-        if not self.models_dir.exists():
-            logger.warning(f"Models directory not found: {self.models_dir}")
-            self.models_dir.mkdir(parents=True, exist_ok=True)
-            logger.info(f"Created models directory: {self.models_dir}")
-            return
-        
         # Find all model files
         model_files = list(self.models_dir.glob("*.pkl")) + list(self.models_dir.glob("*.joblib"))
         

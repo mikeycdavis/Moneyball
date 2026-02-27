@@ -193,6 +193,20 @@ class TestLoadModels:
         
         # Assert: Inactive model should be skipped
         assert "inactive_model" not in service.loaded_models
+    
+    def test_does_not_load_with_no_models(self):
+        """
+        Test that no models exist in model directory.
+        
+        Acceptance Criteria: All IsActive models loaded at startup.
+        """
+        # Act: Create service
+        service = PredictionService(models_dir="custom/path")
+        service.load_models()
+        
+        # Assert: Collections should be empty initially
+        assert len(service.loaded_models) == 0
+        assert len(service.model_metadata) == 0
 
 
 # ====================
