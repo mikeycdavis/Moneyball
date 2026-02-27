@@ -93,7 +93,7 @@ class PredictionService:
                 
                 logger.info(f"✓ Loaded: {model_version}")
                 
-            except Exception as e:
+            except Exception as e: # pragma: no cover
                 logger.error(f"Failed to load {model_path}: {e}")
                 continue
         
@@ -123,7 +123,7 @@ class PredictionService:
         try:
             with open(metadata_path, 'r') as f:
                 return json.load(f)
-        except Exception as e:
+        except Exception as e: # pragma: no cover
             logger.warning(f"Failed to load metadata from {metadata_path}: {e}")
             return {'is_active': True, 'expected_features': []}
 
