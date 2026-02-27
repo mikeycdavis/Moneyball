@@ -1,5 +1,5 @@
-<svg width="89.2" height="20" viewBox="0 0 892 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="develop: 92%">
-  <title>develop: 92%</title>
+<svg width="89.2" height="20" viewBox="0 0 892 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="develop: 94%">
+  <title>develop: 94%</title>
   <linearGradient id="a" x2="0" y2="100%">
     <stop offset="0" stop-opacity=".1" stop-color="#EEE"/>
     <stop offset="1" stop-opacity=".1"/>
@@ -13,8 +13,8 @@
   <g aria-hidden="true" fill="#fff" text-anchor="start" font-family="Verdana,DejaVu Sans,sans-serif" font-size="110">
     <text x="60" y="148" textLength="432" fill="#000" opacity="0.25">develop</text>
     <text x="50" y="138" textLength="432">develop</text>
-    <text x="587" y="148" textLength="260" fill="#000" opacity="0.25">92%</text>
-    <text x="577" y="138" textLength="260">92%</text>
+    <text x="587" y="148" textLength="260" fill="#000" opacity="0.25">94%</text>
+    <text x="577" y="138" textLength="260">94%</text>
   </g>
   
 </svg>
