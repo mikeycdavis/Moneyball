@@ -17,6 +17,7 @@ Test Structure:
 - Test feature importance extraction
 """
 
+import enum
 import pytest
 import numpy as np
 from unittest.mock import Mock, patch, MagicMock
@@ -142,19 +143,16 @@ class TestTrainModel:
         """Test that unsupported model type raises ValueError."""
         # Arrange
         X_train, y_train, X_val, y_val = sample_training_data
+        fake_enum = {"name": "Unsupported", "value": "Unsupported"}
+        fake_model_type = enum.Enum('ModelType', fake_enum)
         
-        # Create a mock unsupported model type
-        with patch('moneyball_ml_python.training.model_trainer.ModelType') as mock_type:
-            mock_member = MagicMock
-            mock_member.value = 'unsupported'
-            
-            # Act & Assert: Should raise ValueError
-            with pytest.raises(ValueError, match="Unsupported model type"):
-                train_model(
-                    X_train, y_train, X_val, y_val,
-                    mock_member,
-                    {}
-                )
+        # Act & Assert: Should raise ValueError
+        with pytest.raises(ValueError, match="Unsupported model type"):
+            train_model(
+                X_train, y_train, X_val, y_val,
+                fake_model_type,
+                {}
+            )
     
     def test_outputs_probabilities(self, sample_training_data, sample_hyperparameters):
         """
