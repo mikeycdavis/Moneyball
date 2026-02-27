@@ -145,6 +145,19 @@ def mock_games_response():
 
 
 @pytest.fixture
+def mock_bad_games_response():
+    """
+    Create mock games API response.
+    
+    Returns:
+        list: Mock games data from Moneyball API
+    """
+    return {
+              'game_id'
+            }
+
+
+@pytest.fixture
 def mock_games_without_game_id_response():
     """
     Create mock games API response.
@@ -495,6 +508,28 @@ class TestFetchGamesByDateRange:
         assert result[0]['game_id'] == 'game_1'
     
     @patch('requests.get')
+    def test_handles_bad_games_result(self, mock_get, mock_bad_games_response):
+        """
+        Test handling of bad games API response.
+        
+        Verifies that an empty list is returned when the games API response is not a list.
+        """
+        # Arrange: Mock successful response
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = mock_bad_games_response
+        mock_get.return_value = mock_response
+        
+        headers = {'Authorization': f'Bearer {MONEYBALL_API_TOKEN}'}
+        
+        # Act: Fetch games
+        result = _fetch_games_by_date_range('2024-01-01', '2024-01-31', headers)
+        
+        # Assert: Should return empty games list
+        assert isinstance(result, list)
+        assert len(result) == 0
+    
+    @patch('requests.get')
     def test_uses_correct_api_endpoint(self, mock_get):
         """
         Test that correct Moneyball API endpoint is called.
@@ -623,7 +658,7 @@ class TestJoinData:
         assert isinstance(df, pd.DataFrame)
         assert len(df) == 0
     
-    def test_handles_partial_data(self, mock_games_response):
+    def test_handles_games_only(self, mock_games_response):
         """
         Test joining with partial data (some sources empty).
         
@@ -631,6 +666,34 @@ class TestJoinData:
         """
         # Act: Join with only games data
         df = join_data(mock_games_response, [], [], [])
+        
+        # Assert: Should still work
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) > 0
+    
+    def test_handles_full_data(self, mock_games_response):
+        """
+        Test joining with partial data (some sources empty).
+        
+        Should still work with only games data.
+        """
+        # Arrange: Mock player stats responses
+        team_stats_response = [
+            {'game_id': 'game_1', 'team_id': 'lakers', 'is_home': True, 'offensive_rating': 115.2},
+            {'game_id': 'game_1', 'team_id': 'celtics', 'is_home': False, 'offensive_rating': 112.1}
+        ]
+
+        player_stats_response = [
+            {'game_id': 'game_1', 'player_id': 'player_1', 'points': 28, 'rebounds': 8},
+            {'game_id': 'game_1', 'player_id': 'player_2', 'points': 22, 'rebounds': 10}
+        ]
+
+        odds_response = [
+            {'game_id': 'game_1', 'home_money_line': -130, 'away_money_line': 110}
+        ]
+
+        # Act: Join with only games data
+        df = join_data(mock_games_response, team_stats_response, player_stats_response, odds_response)
         
         # Assert: Should still work
         assert isinstance(df, pd.DataFrame)
@@ -829,6 +892,24 @@ class TestValidateTrainingData:
         # Act & Assert: Should raise ValueError
         with pytest.raises(ValueError, match="Missing required columns"):
             validate_training_data(df)
+    
+    def test_logs_warning_when_more_than_half_missing_values(self):
+        """
+        Test that DataFrames with > 50% missing values logs warning.
+        """
+        # Arrange: DataFrame with 100 rows
+        try:
+            df = pd.DataFrame({
+                'home_offensive_rating': np.random.uniform(0, 0, 100),
+                'away_offensive_rating': np.random.uniform(0, 0, 100),
+                'home_defensive_rating': np.random.uniform(0, 0, 100),
+                'away_defensive_rating': np.random.uniform(0, 0, 100)
+            })
+        
+            # Act & Assert: Should raise ValueError
+            validate_training_data(df)
+        except ValueError:
+            pytest.fail("Valid data should not raise ValueError")
     
     def test_raises_error_for_insufficient_data(self):
         """
