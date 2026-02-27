@@ -145,6 +145,32 @@ def mock_games_response():
 
 
 @pytest.fixture
+def mock_games_without_game_id_response():
+    """
+    Create mock games API response.
+    
+    Returns:
+        list: Mock games data from Moneyball API
+    """
+    return [
+        {
+            'game_date': '2024-01-15',
+            'home_team': 'Lakers',
+            'away_team': 'Celtics',
+            'home_final_score': 110,
+            'away_final_score': 105
+        },
+        {
+            'game_date': '2024-01-16',
+            'home_team': 'Warriors',
+            'away_team': 'Heat',
+            'home_final_score': 115,
+            'away_final_score': 108
+        }
+    ]
+
+
+@pytest.fixture
 def mock_team_stats_response():
     """
     Create mock team stats API response.
@@ -609,6 +635,17 @@ class TestJoinData:
         # Assert: Should still work
         assert isinstance(df, pd.DataFrame)
         assert len(df) > 0
+    
+    def test_handles_games_without_game_id(self, mock_games_without_game_id_response):
+        """
+        Test not joining when games data is missing game_id.
+        """
+        # Act: Join with only games data
+        df = join_data(mock_games_without_game_id_response, [], [], [])
+        
+        # Assert: Should still work
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == 0
 
 
 # ====================
@@ -638,6 +675,19 @@ class TestPivotTeamStats:
         assert 'game_id' in result.columns
         assert 'home_offensive_rating' in result.columns
         assert 'away_offensive_rating' in result.columns
+    
+    def test_pivots_when_missing_is_home_column(self):
+        """
+        Test missing is_home column.
+        """
+        # Arrange: Team stats DataFrame
+        missing_is_home_df = pd.DataFrame({"game_id": [1]})
+        
+        # Act: Pivot
+        result = _pivot_team_stats(missing_is_home_df)
+        
+        # Assert: Should not have is_home column
+        assert 'is_home' not in result.columns
 
 
 # ====================
@@ -665,6 +715,24 @@ class TestAggregatePlayerStats:
         # Assert: Should select highest scoring player
         assert len(result) == 1
         assert result.iloc[0]['game_id'] == 'game_1'
+    
+    def test_does_not_aggregate_when_missing_game_id_column(self):
+        """
+        Test missing game_id column.
+        """
+        # Arrange: Team stats DataFrame
+        # Arrange: Player stats DataFrame with multiple players
+        player_stats_df = pd.DataFrame([
+            {'player_id': 'player_1', 'points': 28, 'rebounds': 8},
+            {'player_id': 'player_2', 'points': 22, 'rebounds': 10}
+        ])
+        
+        # Act: Aggregate
+        result = _aggregate_player_stats(player_stats_df)
+        
+        # Assert: Should not select a player
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == 0
 
 
 # ====================
