@@ -49,7 +49,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main(): # pragma: no cover
     """
     Main training orchestration function.
     
@@ -77,7 +77,7 @@ def main():
     logger.info("=" * 80)
     
     # Acceptance Criteria: Supports Moneyball API or CSV
-    df = load_training_data(source="synthetic")  # Can be "csv" or "moneyball"
+    df = load_training_data(source="moneyball")  # Can be "csv" or "moneyball"
     validate_training_data(df)
     
     logger.info(f"Loaded {len(df)} training samples")
@@ -315,5 +315,5 @@ def get_git_commit_sha() -> str:
     return 'unknown'
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     main()

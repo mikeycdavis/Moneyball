@@ -129,6 +129,7 @@ ls -la dist/
 
 ### Runtime (automatically installed with package)
 - flask>=3.0.0
+- requests>=2.31.0
 - pandas>=2.0.0
 - numpy>=1.24.0
 - scikit-learn>=1.3.0

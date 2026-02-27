@@ -1,20 +1,20 @@
-<svg width="82.2" height="20" viewBox="0 0 822 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="develop: 7%">
-  <title>develop: 7%</title>
+<svg width="89.2" height="20" viewBox="0 0 892 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="develop: 98%">
+  <title>develop: 98%</title>
   <linearGradient id="a" x2="0" y2="100%">
     <stop offset="0" stop-opacity=".1" stop-color="#EEE"/>
     <stop offset="1" stop-opacity=".1"/>
   </linearGradient>
-  <mask id="m"><rect width="822" height="200" rx="30" fill="#FFF"/></mask>
+  <mask id="m"><rect width="892" height="200" rx="30" fill="#FFF"/></mask>
   <g mask="url(#m)">
     <rect width="532" height="200" fill="#555"/>
-    <rect width="290" height="200" fill="#44cc11" x="532"/>
-    <rect width="822" height="200" fill="url(#a)"/>
+    <rect width="360" height="200" fill="#44cc11" x="532"/>
+    <rect width="892" height="200" fill="url(#a)"/>
   </g>
   <g aria-hidden="true" fill="#fff" text-anchor="start" font-family="Verdana,DejaVu Sans,sans-serif" font-size="110">
     <text x="60" y="148" textLength="432" fill="#000" opacity="0.25">develop</text>
     <text x="50" y="138" textLength="432">develop</text>
-    <text x="587" y="148" textLength="190" fill="#000" opacity="0.25">7%</text>
-    <text x="577" y="138" textLength="190">7%</text>
+    <text x="587" y="148" textLength="260" fill="#000" opacity="0.25">98%</text>
+    <text x="577" y="138" textLength="260">98%</text>
   </g>
   
 </svg>

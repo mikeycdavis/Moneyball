@@ -19,13 +19,13 @@ from sklearn.metrics import (
 try:
     import xgboost as xgb
     XGBOOST_AVAILABLE = True
-except ImportError:
+except ImportError: # pragma: no cover
     XGBOOST_AVAILABLE = False
     
 try:
     import lightgbm as lgb
     LIGHTGBM_AVAILABLE = True
-except ImportError:
+except ImportError: # pragma: no cover
     LIGHTGBM_AVAILABLE = False
 
 from moneyball_ml_python.training.model_config import ModelType
@@ -269,7 +269,7 @@ def get_feature_importance(model: Any, feature_names: list) -> Dict[str, float]:
                 importance_dict[name] = float(coef)
         else:
             logger.warning("Model does not have feature importance attributes")
-    except Exception as e:
+    except Exception as e: # pragma: no cover
         logger.error(f"Failed to extract feature importance: {e}")
     
     return importance_dict

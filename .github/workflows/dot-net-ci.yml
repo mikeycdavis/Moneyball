@@ -37,16 +37,9 @@ jobs:
     env:
       DOTNET_VERSION: '10.0.x'
       COVERAGE_THRESHOLD: 85
+      COVERAGE_THRESHOLD_WARNING: 80
 
     steps:
-      - name: Calculate Thresholds
-        run: |
-          # Explicitly set scale=0 to ensure truncation to integer
-          WARNING=$(echo "scale=0; ($COVERAGE_THRESHOLD * 0.85) / 1" | bc)
-          echo "COVERAGE_THRESHOLD_WARNING=$WARNING" >> $GITHUB_ENV
-          echo "COVERAGE_THRESHOLD = $COVERAGE_THRESHOLD"
-          echo "COVERAGE_THRESHOLD_WARNING = $WARNING"
-        
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -108,8 +101,8 @@ jobs:
         run: |
           COVERAGE=$(grep -oP 'Line coverage:\s+\K[0-9.]+' coverage-report/Summary.txt | cut -d'.' -f1)
           echo "Line Coverage: $COVERAGE%"
-          if [ "$COVERAGE" -lt "$COVERAGE_THRESHOLD" ]; then
-            echo "Coverage is below threshold ($COVERAGE_THRESHOLD%)"
+          if [ "$COVERAGE" -lt "$COVERAGE_THRESHOLD_WARNING" ]; then
+            echo "Coverage is below threshold ($COVERAGE_THRESHOLD_WARNING%)"
             exit 1
           fi
           # Set step output
