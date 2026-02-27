@@ -83,8 +83,8 @@ jobs:
           echo "Line Coverage: $COVERAGE_PERCENT%"
           echo "coverage=$COVERAGE_PERCENT" >> $GITHUB_OUTPUT
           
-          if [ "$COVERAGE_PERCENT" -lt "$COVERAGE_THRESHOLD" ]; then
-            echo "Coverage $COVERAGE_PERCENT% is below threshold ($COVERAGE_THRESHOLD%)"
+          if [ "$COVERAGE_PERCENT" -lt "$COVERAGE_THRESHOLD_WARNING" ]; then
+            echo "Coverage $COVERAGE_PERCENT% is below threshold ($COVERAGE_THRESHOLD_WARNING%)"
             exit 1
           fi
 
