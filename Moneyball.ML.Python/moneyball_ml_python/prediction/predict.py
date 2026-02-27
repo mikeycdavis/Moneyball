@@ -52,7 +52,7 @@ class PredictionService:
         start_time = time.time()
         
         # Create models directory if missing
-        if not self.models_dir.exists(): # pragma: no cover
+        if not self.models_dir.exists():
             logger.warning(f"Models directory not found: {self.models_dir}")
             self.models_dir.mkdir(parents=True, exist_ok=True)
             logger.info(f"Created models directory: {self.models_dir}")
@@ -61,7 +61,7 @@ class PredictionService:
         # Find all model files
         model_files = list(self.models_dir.glob("*.pkl")) + list(self.models_dir.glob("*.joblib"))
         
-        if not model_files: # pragma: no cover
+        if not model_files:
             logger.warning(f"No model files found in {self.models_dir}")
             return
         
@@ -100,7 +100,7 @@ class PredictionService:
                 
                 logger.info(f"✓ Loaded: {model_version}")
                 
-            except Exception as e: # pragma: no cover
+            except Exception as e:
                 logger.error(f"Failed to load {model_path}: {e}")
                 continue
         
@@ -124,13 +124,13 @@ class PredictionService:
             "description": "NBA Model v1"
         }
         """
-        if not metadata_path.exists(): # pragma: no cover
+        if not metadata_path.exists():
             return {'is_active': True, 'expected_features': []}
         
         try:
             with open(metadata_path, 'r') as f:
                 return json.load(f)
-        except Exception as e: # pragma: no cover
+        except Exception as e:
             logger.warning(f"Failed to load metadata from {metadata_path}: {e}")
             return {'is_active': True, 'expected_features': []}
 
@@ -207,7 +207,7 @@ class PredictionService:
                 "prediction_time_ms": round(prediction_time_ms, 2)
             }
             
-        except Exception as e: # pragma: no cover
+        except Exception as e:
             logger.error(f"Prediction failed for {version}: {e}")
             return {
                 "error": str(e),
@@ -247,7 +247,7 @@ class PredictionService:
                     # Convert to float
                     try:
                         value = float(value)
-                    except (ValueError, TypeError): # pragma: no cover
+                    except (ValueError, TypeError):
                         logger.warning(f"Invalid value for {feature_name}, using 0.0")
                         value = 0.0
                     
@@ -262,7 +262,7 @@ class PredictionService:
                 feature_values = [float(features[name]) for name in feature_names]
                 return np.array([feature_values], dtype=np.float32)
             
-        except Exception as e: # pragma: no cover
+        except Exception as e:
             logger.error(f"Failed to prepare features: {e}")
             return np.array([[]], dtype=np.float32)
 
